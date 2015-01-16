@@ -1,0 +1,11 @@
+Package: bigregression
+Type: Package
+Title: Out-of-core regressions with connection inputs
+Version: 0.1
+Date: 2015-01-16
+Author: Taylor Arnold, Michael J. Kane, Simon Urbanek
+Maintainer: Michael J. Kane <kaneplusplus@gmail.com>
+Description: This package implements out-of-core regression routines (OLS, GLM,
+LASSO, step-wise) and can be used with any input implemented as an R
+connection.
+License: Apache License 2.0
