@@ -1,7 +1,7 @@
 
-#' @param formula the formula for the regression
-#' @param df the data frame to calculate xtx and xty for
-#' @param contrasts the contrasts for categorical regressors
+# @param formula the formula for the regression
+# @param df the data frame to calculate xtx and xty for
+# @param contrasts the contrasts for categorical regressors
 xtx_and_xty = function(formula, df, contrasts) {
   mm = model.matrix(formula, df, contrasts=contrasts)
   xtx = crossprod(mm)
