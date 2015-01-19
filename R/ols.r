@@ -105,8 +105,10 @@ blm = function(formula, data, data_frame_preprocessor=function(x) x,
 #' 
 #' @param object an object return from blm
 #' @param data a data.frame or connection to the data set where training was performed.
+#' @param data_frame_preprocessor any preprocessing that needs to be performed on the data
 #' @export
-summary.blm = function(object, data, ...) {
+summary.blm = function(object, data, data_frame_preprocessor=function(x) x, 
+                       ...) {
   call = match.call()
   terms = object$terms
   if (is.data.frame(data)) {
