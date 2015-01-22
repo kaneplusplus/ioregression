@@ -5,7 +5,7 @@
 \title{Perform a big linear regression}
 \usage{
 blm(formula, data, data_frame_preprocessor = function(x) x,
-  contrasts = NULL, parallel = 1, tol = -1)
+  contrasts = NULL, tol = -1, sep = ",")
 }
 \arguments{
 \item{formula}{the formual for the regression}
@@ -17,7 +17,7 @@ a connection into a properly formatted data frame}
 
 \item{contrasts}{the contrasts for categorical regressors}
 
-\item{parallel}{the number of cores to apply to the regression}
+\item{sep}{if using a connection or file, which character is used as a separator between elements?}
 }
 \description{
 Perform a big linear regression

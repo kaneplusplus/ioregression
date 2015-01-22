@@ -4,12 +4,17 @@
 \alias{summary.blm}
 \title{Get the regression diagnostics for a big linear regression}
 \usage{
-\method{summary}{blm}(object, data, ...)
+\method{summary}{blm}(object, data, data_frame_preprocessor = function(x) x,
+  sep = ",", ...)
 }
 \arguments{
 \item{object}{an object return from blm}
 
 \item{data}{a data.frame or connection to the data set where training was performed.}
+
+\item{data_frame_preprocessor}{any preprocessing that needs to be performed on the data}
+
+\item{sep}{if using a connection or file, which character is used as a separator between elements?}
 }
 \description{
 Get the regression diagnostics for a big linear regression

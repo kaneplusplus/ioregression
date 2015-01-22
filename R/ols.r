@@ -32,10 +32,10 @@ yty_and_btxtxb= function(formula, b, df, contrasts, y_mean) {
 #' @param data_frame_preprocessor a function that turns the data read from
 #' a connection into a properly formatted data frame
 #' @param contrasts the contrasts for categorical regressors
-#' @param parallel the number of cores to apply to the regression
+#' @param sep if using a connection or file, which character is used as a separator between elements?
 #' @export
 blm = function(formula, data, data_frame_preprocessor=function(x) x, 
-               contrasts=NULL, parallel=1, tol=-1) {
+               contrasts=NULL, tol=-1, sep=",") {
   call = match.call()
   if (is.data.frame(data)) {
     cvs = xtx_and_xty(formula, data_frame_preprocessor(data),contrasts)
@@ -43,19 +43,20 @@ blm = function(formula, data, data_frame_preprocessor=function(x) x,
     xty = cvs$xty
     sum_y = cvs$sum_y
     n = cvs$n
-  } else {
-    if (!is.character(data)) {
-      stop("Only data frames or file names are currently supported as input")
-    }
-    cvs = chunk.apply(iotools:::input(data),
+  } else if (is.character(data) || inherits(data, "connection")) {
+    input = if (is.character(data)) input.file(data) else data
+    cvs = chunk.apply(input,
       function(x) {
-        xtx_and_xty(formula, data_frame_preprocessor(x), contrasts)
+        df = dstrsplit(x, col_types=col_classes, sep=",")
+        xtx_and_xty(formula, data_frame_preprocessor(df), contrasts)
       },
-      CH.MERGE=list, parallel=parallel)
+      CH.MERGE=list)
     xtx = Reduce(`+`, Map(function(x) x$xtx, cvs))
     xty = Reduce(`+`, Map(function(x) x$xty, cvs))
     sum_y = Reduce(`+`, Map(function(x) x$sum_y, cvs))
     n = Reduce(`+`, Map(function(x) x$n, cvs))
+  } else {
+    stop("Unknown input data type")
   }
   design_matrix_names = colnames(xtx)
   # Get rid of colinear variables.
@@ -106,9 +107,10 @@ blm = function(formula, data, data_frame_preprocessor=function(x) x,
 #' @param object an object return from blm
 #' @param data a data.frame or connection to the data set where training was performed.
 #' @param data_frame_preprocessor any preprocessing that needs to be performed on the data
+#' @param sep if using a connection or file, which character is used as a separator between elements?
 #' @export
 summary.blm = function(object, data, data_frame_preprocessor=function(x) x, 
-                       ...) {
+                       sep=",", ...) {
   call = match.call()
   terms = object$terms
   if (is.data.frame(data)) {
@@ -121,20 +123,24 @@ summary.blm = function(object, data, data_frame_preprocessor=function(x) x,
     btxtxb = rss_chunk$btxtxb
     syy = rss_chunk$syy
     rss = rss_chunk$rss
-  } else {
-    rss_chunks = chunk.apply(iotools:::input(data),
+  } else if (is.character(data) || inherits(data, "connection")) {
+    input = if (is.character(data)) input.file(data) else data
+    rss_chunks = chunk.apply(input,
       function(x) {
+        df = dstrsplit(x, col_types=col_classes, sep=",")
         yty_and_btxtxb(formula(object$terms),
                        object$coefficients, 
-                       data_frame_preprocessor(x), 
+                       data_frame_preprocessor(df), 
                        object$contrasts,
                        object$sum_y/object$n)
       },
-      CH.MERGE=list, parallel=2)
+      CH.MERGE=list)
     yty = Reduce(`+`, Map(function(x) x$yty, rss_chunks))
     btxtxb = Reduce(`+`, Map(function(x) x$btxtxb, rss_chunks))
     syy = Reduce(`+`, Map(function(x) x$syy, rss_chunks))
     rss = Reduce(`+`, Map(function(x) x$rss, rss_chunks))
+  } else {
+    stop("Unknown input data type")
   }
   rss_beta = yty - btxtxb
   df = c(length(object$design_matrix_names), 
@@ -145,9 +151,10 @@ summary.blm = function(object, data, data_frame_preprocessor=function(x) x,
   cov_unscaled = solve(object$xtx)
   se = sigma * sqrt(diag(cov_unscaled))
   tv = object$coefficients/se
-  ptv = apply(cbind( pt(tv, df), 1-pt(tv, df) ), 1, min)
+  ptv = apply(cbind( pt(tv, df[2]), 1-pt(tv, df[2]) ), 1, min)
   coefficients = cbind(object$coefficients, se, tv, ptv)
   colnames(coefficients) = c("Estimate", "Std. Error", "t value", "Pr(>|t|)")
+  rownames(coefficients) = rownames(object$xtx)
   # Aliasing could be better.
   aliased = rep(FALSE, length(object$coefficients))
   names(aliased) = names(object$coefficients)
