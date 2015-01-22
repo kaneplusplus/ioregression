@@ -25,7 +25,7 @@ yty_and_btxtxb= function(formula, b, df, contrasts, y_mean) {
   list(yty=yty, btxtxb=btxtxb, syy=syy, rss=rss)
 }
 
-#' Perform a big linear regression
+#' Perform a linear regression
 #'
 #' @param formula the formual for the regression
 #' @param data a connection to read data from
@@ -34,7 +34,7 @@ yty_and_btxtxb= function(formula, b, df, contrasts, y_mean) {
 #' @param contrasts the contrasts for categorical regressors
 #' @param sep if using a connection or file, which character is used as a separator between elements?
 #' @export
-blm = function(formula, data, data_frame_preprocessor=function(x) x, 
+iolm = function(formula, data, data_frame_preprocessor=function(x) x, 
                contrasts=NULL, tol=-1, sep=",") {
   call = match.call()
   if (is.data.frame(data)) {
@@ -98,18 +98,18 @@ blm = function(formula, data, data_frame_preprocessor=function(x) x,
   ret = list(coefficients=coefficients, call=call, terms=terms, 
              design_matrix_names=design_matrix_names, xtx=xtx, sum_y=sum_y,
              n=n)
-  class(ret) = "blm"
+  class(ret) = "iolm"
   ret
 }
 
-#' Get the regression diagnostics for a big linear regression
+#' Get the regression diagnostics for a linear regression
 #' 
-#' @param object an object return from blm
+#' @param object an object return from iolm
 #' @param data a data.frame or connection to the data set where training was performed.
 #' @param data_frame_preprocessor any preprocessing that needs to be performed on the data
 #' @param sep if using a connection or file, which character is used as a separator between elements?
 #' @export
-summary.blm = function(object, data, data_frame_preprocessor=function(x) x, 
+summary.iolm = function(object, data, data_frame_preprocessor=function(x) x, 
                        sep=",", ...) {
   call = match.call()
   terms = object$terms

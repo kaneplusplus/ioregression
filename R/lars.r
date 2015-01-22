@@ -1,4 +1,4 @@
-#' Perform a big lasso or stepwise regression
+#' Perform a lasso or stepwise regression
 #'
 #' @param formula the formual for the regression
 #' @param data a connection to read data from
@@ -12,7 +12,7 @@
 #' @param eps  An effective zero
 #' @param max.steps Limit the number of steps taken
 #' @export
-blars = function(formula, data, data_frame_preprocessor=function(x) x,
+iolars = function(formula, data, data_frame_preprocessor=function(x) x,
                   type = c("lasso", "lar", "forward.stagewise","stepwise"),
                   contrasts=NULL, sep=",", eps = .Machine$double.eps,
                   max.steps = NULL) {
@@ -44,7 +44,7 @@ blars = function(formula, data, data_frame_preprocessor=function(x) x,
   ret = list(coefficients=obj$beta, lambda=obj$lambda, call=call,
              design_matrix_names=design_matrix_names, xtx=xtx, sum_y=sum_y,
              n=n)
-  class(ret) = "blars"
+  class(ret) = "iolars"
   ret
 }
 

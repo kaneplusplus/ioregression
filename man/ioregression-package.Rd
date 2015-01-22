@@ -1,27 +1,29 @@
-\name{bigregression-package}
-\alias{bigregression-package}
-\alias{bigregression}
+\name{ioregression-package}
+\alias{ioregression-package}
+\alias{ioregression}
 \docType{package}
 \title{
 Out-of-core regressions with connection inputs
 }
 \description{
 This package implements out-of-core regression routines (OLS, GLM,
-LASSO, step-wise) and can be used with any input implemented as an R
+LARS) and can be used with any input implemented as an R
 connection.
 }
 \details{
 \tabular{ll}{
-Package: \tab bigregression\cr
+Package: \tab ioregression\cr
 Type: \tab Package\cr
 Version: \tab 0.1\cr
-Date: \tab 2015-01-16\cr
+Date: \tab 2015-01-22\cr
 License: \tab Apache License 2.0\cr
 }
 
 Index of functions:
 \preformatted{
-blm
+iolm
+summary.lm
+iolars
 }
 }
 \author{
@@ -30,5 +32,5 @@ Taylor Arnold, Michael J. Kane, Simon Urbanek
 Maintainer: Michael J. Kane <kaneplusplus@gmail.com>
 }
 \examples{
-blm(Sepal.Width ~ Sepal.Length + species, data=iris)
+iolm(Sepal.Width ~ Sepal.Length + species, data=iris)
 }

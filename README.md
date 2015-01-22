@@ -1,2 +1,2 @@
-# bigregression
+# ioregression
 An R package for out-of-core regressions
