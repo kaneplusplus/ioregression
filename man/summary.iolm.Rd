@@ -5,7 +5,7 @@
 \title{Get the regression diagnostics for a linear regression}
 \usage{
 \method{summary}{iolm}(object, data, data_frame_preprocessor = function(x) x,
-  sep = ",", ...)
+  sep = ",", parallel = 1, ...)
 }
 \arguments{
 \item{object}{an object return from iolm}
@@ -15,6 +15,8 @@
 \item{data_frame_preprocessor}{any preprocessing that needs to be performed on the data}
 
 \item{sep}{if using a connection or file, which character is used as a separator between elements?}
+
+\item{parallel}{how many logical processor cores to use (default 1)}
 }
 \description{
 Get the regression diagnostics for a linear regression

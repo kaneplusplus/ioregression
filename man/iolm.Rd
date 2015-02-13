@@ -5,7 +5,7 @@
 \title{Perform a linear regression}
 \usage{
 iolm(formula, data, data_frame_preprocessor = function(x) x,
-  contrasts = NULL, tol = -1, sep = ",")
+  contrasts = NULL, tol = -1, sep = ",", parallel = 7)
 }
 \arguments{
 \item{formula}{the formual for the regression}
@@ -18,6 +18,8 @@ a connection into a properly formatted data frame}
 \item{contrasts}{the contrasts for categorical regressors}
 
 \item{sep}{if using a connection or file, which character is used as a separator between elements?}
+
+\item{parallel}{how many logical processor cores to use (default 1)}
 }
 \description{
 Perform a linear regression

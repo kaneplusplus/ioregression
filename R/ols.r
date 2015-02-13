@@ -27,15 +27,16 @@ yty_and_btxtxb= function(formula, b, df, contrasts, y_mean) {
 
 #' Perform a linear regression
 #'
-#' @param formula the formual for the regression
+#' @param formula the formula for the regression
 #' @param data a connection to read data from
 #' @param data_frame_preprocessor a function that turns the data read from
 #' a connection into a properly formatted data frame
 #' @param contrasts the contrasts for categorical regressors
 #' @param sep if using a connection or file, which character is used as a separator between elements?
+#' @param parallel how many logical processor cores to use (default 1)
 #' @export
 iolm = function(formula, data, data_frame_preprocessor=function(x) x, 
-               contrasts=NULL, tol=-1, sep=",") {
+               contrasts=NULL, tol=-1, sep=",", parallel=1) {
   call = match.call()
   if (is.data.frame(data)) {
     cvs = xtx_and_xty(formula, data_frame_preprocessor(data),contrasts)
@@ -44,13 +45,14 @@ iolm = function(formula, data, data_frame_preprocessor=function(x) x,
     sum_y = cvs$sum_y
     n = cvs$n
   } else if (is.character(data) || inherits(data, "connection")) {
-    input = if (is.character(data)) input.file(data) else data
+#    input = if (is.character(data)) input.file(data) else data
+    input = data
     cvs = chunk.apply(input,
       function(x) {
         df = dstrsplit(x, col_types=col_classes, sep=",")
         xtx_and_xty(formula, data_frame_preprocessor(df), contrasts)
       },
-      CH.MERGE=list)
+      CH.MERGE=list, parallel=parallel)
     xtx = Reduce(`+`, Map(function(x) x$xtx, cvs))
     xty = Reduce(`+`, Map(function(x) x$xty, cvs))
     sum_y = Reduce(`+`, Map(function(x) x$sum_y, cvs))
@@ -108,9 +110,10 @@ iolm = function(formula, data, data_frame_preprocessor=function(x) x,
 #' @param data a data.frame or connection to the data set where training was performed.
 #' @param data_frame_preprocessor any preprocessing that needs to be performed on the data
 #' @param sep if using a connection or file, which character is used as a separator between elements?
+#' @param parallel how many logical processor cores to use (default 1)
 #' @export
 summary.iolm = function(object, data, data_frame_preprocessor=function(x) x, 
-                       sep=",", ...) {
+                       sep=",", parallel=1, ...) {
   call = match.call()
   terms = object$terms
   if (is.data.frame(data)) {
@@ -124,7 +127,8 @@ summary.iolm = function(object, data, data_frame_preprocessor=function(x) x,
     syy = rss_chunk$syy
     rss = rss_chunk$rss
   } else if (is.character(data) || inherits(data, "connection")) {
-    input = if (is.character(data)) input.file(data) else data
+    #input = if (is.character(data)) input.file(data) else data
+    input = data
     rss_chunks = chunk.apply(input,
       function(x) {
         df = dstrsplit(x, col_types=col_classes, sep=",")
@@ -134,7 +138,7 @@ summary.iolm = function(object, data, data_frame_preprocessor=function(x) x,
                        object$contrasts,
                        object$sum_y/object$n)
       },
-      CH.MERGE=list)
+      CH.MERGE=list, parallel=parallel)
     yty = Reduce(`+`, Map(function(x) x$yty, rss_chunks))
     btxtxb = Reduce(`+`, Map(function(x) x$btxtxb, rss_chunks))
     syy = Reduce(`+`, Map(function(x) x$syy, rss_chunks))
