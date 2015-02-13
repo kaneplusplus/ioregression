@@ -1,5 +1,3 @@
-source("ols.r")
-
 glm_kernel = function(y, mm, family, beta) {
   eta = mm %*% beta
   g = family$linkinv(eta)
