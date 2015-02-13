@@ -5,10 +5,10 @@
 \title{Perform a linear regression}
 \usage{
 iolm(formula, data, data_frame_preprocessor = function(x) x,
-  contrasts = NULL, tol = -1, sep = ",", parallel = 7)
+  contrasts = NULL, tol = -1, sep = ",", parallel = 1)
 }
 \arguments{
-\item{formula}{the formual for the regression}
+\item{formula}{the formula for the regression}
 
 \item{data}{a connection to read data from}
 
