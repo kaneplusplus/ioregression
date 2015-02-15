@@ -2,14 +2,15 @@
 % Please edit documentation in R/glm.r
 \name{ioglm}
 \alias{ioglm}
-\title{Perform a linear regression}
+\title{Perform a generalized linear regression}
 \usage{
-ioglm(formula, family = gaussian(), data, dfpp, beta_start = NULL,
-  maxit = 25, tol = 1e-08, model = TRUE, method = "irls",
-  contrasts = NULL, sep = ",", parallel = 1, verbose = FALSE, ...)
+ioglm(form, family = gaussian(), data, dfpp = function(x) x,
+  beta_start = NULL, control = list(maxit = 25, epsilon = 1e-08, trace =
+  FALSE), method = "irls", contrasts = NULL, sep = ",", parallel = 1,
+  ...)
 }
 \arguments{
-\item{formula}{an object of class ‘"formula"’ (or one that can be coerced to that class): a symbolic description of the model to be fitted.}
+\item{form}{an object of class ‘"formula"’ (or one that can be coerced to that class): a symbolic description of the model to be fitted.}
 
 \item{family}{a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function or the result of a call to a family function.}
 
@@ -20,10 +21,10 @@ read data from a chunk into a properly formatted data frame}
 
 \item{beta_start}{starting values for the linear predictor.}
 
-\item{maxit}{the maximum number of iterations.}
+\item{control}{a list of parameters for controlling the fitting process.}
 
 \item{method}{the method to be used in fitting the model.  The default is
-iteratively reweighted least squares. Support for stochastic gradient
+iteratively reweighted least squares (irls). Support for stochastic gradient
 decent is coming.}
 
 \item{contrasts}{an optional list. See the ‘contrasts.arg’ of ‘model.matrix.default’.}
@@ -31,10 +32,8 @@ decent is coming.}
 \item{sep}{if using a connection or file, which character is used as a separator between elements?}
 
 \item{parallel}{how many logical processor cores to use (default 1)}
-
-\item{verbose}{show extra information.}
 }
 \description{
-Perform a linear regression
+Perform a generalized linear regression
 }
 
