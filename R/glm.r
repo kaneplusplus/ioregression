@@ -26,7 +26,7 @@ dfpp_gen = function(col_names, col_types, sep, dfpp_fun=function(x) x) {
 
 #' Perform a linear regression
 #'
-#' @param formula an object of class ‘"formula"’ (or one that can be coerced to that class): a symbolic description of the model to be fitted.
+#' @param form an object of class ‘"formula"’ (or one that can be coerced to that class): a symbolic description of the model to be fitted.
 #' @param family a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function or the result of a call to a family function.
 #' @param data a connection to read data from
 #' @param dfpp the data frame preprocessor. a function that turns the 
@@ -39,38 +39,38 @@ dfpp_gen = function(col_names, col_types, sep, dfpp_fun=function(x) x) {
 #' @param contrasts an optional list. See the ‘contrasts.arg’ of ‘model.matrix.default’.
 #' @param sep if using a connection or file, which character is used as a separator between elements?
 #' @param parallel how many logical processor cores to use (default 1)
-#' @param verbose show extra information.
 #' @export
-ioglm = function(formula, family = gaussian(), data, dfpp,
-                 beta_start=NULL, maxit=25,
-                 tol=1e-08, model = TRUE, method = "irls",
-                 contrasts = NULL, sep=",", parallel=1, verbose=FALSE, ...) {
+ioglm = function(form, family = gaussian(), data, dfpp=function(x) x,
+                 beta_start=NULL, control=list(maxit=25, epsilon=1e-08, 
+                 trace=FALSE), method = "irls",
+                 contrasts = NULL, sep=",", parallel=1, ...) {
+  call = match.call()
   ret = NULL
   beta_old = beta_start
   if (parallel != 1)
     warning("parallel argument is not working... setting parallel to 1.")
   if (is.data.frame(data)) {
     # The data.frame implementation.
-    for (i in 1:maxit) {
+    for (i in 1:control$maxit) {
+      data = dfpp(data)
       mm = model.matrix(form, data, contrasts)
-      if (verbose)
+      if (control$trace)
         cat("iteration", i, "\n")
       if (is.null(beta_old)) beta_old = matrix(0, ncol=1, nrow=ncol(mm))
       glm_m = glm_kernel(data[row.names(mm),all.vars(form)[1]], mm, family, 
                          beta_old)
       # TODO: Add checking for singularities here.
-      beta = solve(glm_m$XTWX, tol=2*.Machine$double.eps) %*% glm_m$XTWz
-      if (as.vector(sqrt(crossprod(beta-beta_old))) < tol) break      
+      XTWX = glm_m$XTWX
+      XTWz = glm_m$XTWz
+      beta = solve(XTWX, tol=2*.Machine$double.eps) %*% XTWz
+      if (as.vector(sqrt(crossprod(beta-beta_old))) < control$epsilon) break 
       beta_old = beta
     }
-    ret = c(coefficients=beta, iterations=i)
   } else {
     if (!is.character(data))
       stop("Unsupported input type")
-    if (missing(dfpp))
-      stop("You must specify a data frame preprocessor function.")
     # The iotools implementation.
-    for (i in 1:maxit) {
+    for (i in 1:control$maxit) {
       cvs = chunk.apply(data,
         function(x) {
           df = dfpp(x)
@@ -82,13 +82,34 @@ ioglm = function(formula, family = gaussian(), data, dfpp,
       XTWz = Reduce(`+`, Map(function(x) x$XTWz, cvs))
       # TODO: Add checking for singularities here.
       beta = solve(XTWX, tol=2*.Machine$double.eps) %*% XTWz
-      if (!is.null(beta_old) && as.vector(sqrt(crossprod(beta-beta_old))) < tol)
+      if (!is.null(beta_old) && as.vector(sqrt(crossprod(beta-beta_old))) < 
+          control$epsilon) {
         break
+      }
       beta_old = beta
     }
-    ret = list(coefficients=beta, iterations=i)
   }
-  class(ret) = "ioglm"
+  if (as.vector(sqrt(crossprod(beta-beta_old))) < control$epsilon) {
+    converged=TRUE
+  }
+  beta_names = row.names(beta)
+  beta = as.vector(beta)
+  names(beta) = beta_names
+  ret = list(coefficients=beta, 
+    data=data,
+    dfpp=dfpp,
+    rank=nrow(XTWX),
+    xtwx=XTWX,
+    xtwz=XTWz,
+    iter=i, 
+    converged=converged, 
+    formula=form,
+    call=call,
+    terms=terms.formula(form),
+    control=control,
+    method=method,
+    contrasts=contrasts)
+  class(ret) = c("ioglm", "iolm")
   ret
 }
 
