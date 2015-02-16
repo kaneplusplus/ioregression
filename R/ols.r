@@ -27,7 +27,7 @@ yty_and_btxtxb= function(formula, b, df, contrasts, y_mean) {
 
 #' Perform a linear regression
 #'
-#' @param formula the formula for the regression
+#' @param form the formula for the regression
 #' @param data a connection to read data from
 #' @param data_frame_preprocessor a function that turns the data read from
 #' a connection into a properly formatted data frame
@@ -35,22 +35,20 @@ yty_and_btxtxb= function(formula, b, df, contrasts, y_mean) {
 #' @param sep if using a connection or file, which character is used as a separator between elements?
 #' @param parallel how many logical processor cores to use (default 1)
 #' @export
-iolm = function(formula, data, data_frame_preprocessor=function(x) x, 
+iolm = function(form, data, dfpp=function(x) x,
                contrasts=NULL, tol=-1, sep=",", parallel=1) {
   call = match.call()
   if (is.data.frame(data)) {
-    cvs = xtx_and_xty(formula, data_frame_preprocessor(data),contrasts)
+    cvs = xtx_and_xty(form, dfpp(data),contrasts)
     xtx = cvs$xtx
     xty = cvs$xty
     sum_y = cvs$sum_y
     n = cvs$n
   } else if (is.character(data) || inherits(data, "connection")) {
-#    input = if (is.character(data)) input.file(data) else data
-    input = data
-    cvs = chunk.apply(input,
+    cvs = chunk.apply(data,
       function(x) {
-        df = dstrsplit(x, col_types=col_classes, sep=",")
-        xtx_and_xty(formula, data_frame_preprocessor(df), contrasts)
+        df = dfpp(x)
+        xtx_and_xty(form, data_frame_preprocessor(df), contrasts)
       },
       CH.MERGE=list, parallel=parallel)
     xtx = Reduce(`+`, Map(function(x) x$xtx, cvs))
@@ -67,7 +65,7 @@ iolm = function(formula, data, data_frame_preprocessor=function(x) x,
     # xtx is rank deficient. 
     new_name_order = attr(ch, "pivot")
     effective_rank = attr(ch, "rank")
-    ft = terms(formula)
+    ft = terms(form)
     formula_vars = colnames(attr(ft, "factors"))
     keep_vars = new_name_order[1:effective_rank]
     drop_var_names = colnames(xtx)[setdiff(new_name_order, keep_vars)]
@@ -91,15 +89,15 @@ iolm = function(formula, data, data_frame_preprocessor=function(x) x,
     # Now update the formula so that it doesn't have the colinear terms.
     drop_inds = match(drop_var_names, formula_vars)
     ft = drop.terms(ft, drop_inds, keep.response=TRUE)
-    formula = formula(ft)
+    form = formula(ft)
   }
   coefficients = as.numeric(solve(xtx) %*% xty)
   names(coefficients) = rownames(xtx)
-  terms = terms(formula)
+  terms = terms(form)
   contrasts = contrasts
   ret = list(coefficients=coefficients, call=call, terms=terms, 
              design_matrix_names=design_matrix_names, xtx=xtx, sum_y=sum_y,
-             n=n)
+             n=n, data=data, dfpp=dfpp, contrasts=contrasts, rank=ncol(xtx))
   class(ret) = "iolm"
   ret
 }
@@ -107,34 +105,29 @@ iolm = function(formula, data, data_frame_preprocessor=function(x) x,
 #' Get the regression diagnostics for a linear regression
 #' 
 #' @param object an object return from iolm
-#' @param data a data.frame or connection to the data set where training was performed.
-#' @param data_frame_preprocessor any preprocessing that needs to be performed on the data
-#' @param sep if using a connection or file, which character is used as a separator between elements?
 #' @param parallel how many logical processor cores to use (default 1)
 #' @export
-summary.iolm = function(object, data, data_frame_preprocessor=function(x) x, 
-                       sep=",", parallel=1, ...) {
+summary.iolm = function(object, parallel=1, ...) {
   call = match.call()
   terms = object$terms
   if (is.data.frame(data)) {
     rss_chunk = yty_and_btxtxb(formula(object$terms), 
                                object$coefficients,
-                               data_frame_preprocessor(data),
+                               object$dfpp(object$data),
                                object$coefficients,
                                object$sum_y/object$n)
     yty = rss_chunk$yty
     btxtxb = rss_chunk$btxtxb
     syy = rss_chunk$syy
     rss = rss_chunk$rss
-  } else if (is.character(data) || inherits(data, "connection")) {
+  } else if (is.character(object$data)) {
     #input = if (is.character(data)) input.file(data) else data
-    input = data
-    rss_chunks = chunk.apply(input,
+    rss_chunks = chunk.apply(object$data,
       function(x) {
-        df = dstrsplit(x, col_types=col_classes, sep=",")
+        df = dfpp(x)
         yty_and_btxtxb(formula(object$terms),
                        object$coefficients, 
-                       data_frame_preprocessor(df), 
+                       object$dfpp(df), 
                        object$contrasts,
                        object$sum_y/object$n)
       },
@@ -169,7 +162,7 @@ summary.iolm = function(object, data, data_frame_preprocessor=function(x) x,
   ret = list(call=call, terms=object$terms, coefficients=coefficients,
        aliased=aliased, sigma=sigma, df=df, r.squared=r_squared,
        adj.r.squared=adj_r_squared, fstatistic=fstatistic, 
-       cov.unscaled=cov_unscaled)
+       cov.unscaled=cov_unscaled, data=object$data, dfpp=object$dfpp)
   class(ret) = "summary.lm"
   ret
 }
