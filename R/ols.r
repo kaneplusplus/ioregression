@@ -28,7 +28,7 @@ yty_and_btxtxb= function(formula, b, df, contrasts, y_mean) {
 #'
 #' @param form the formula for the regression
 #' @param data a connection to read data from
-#' @param data_frame_preprocessor a function that turns the data read from
+#' @param dfpp a function that turns the data read from
 #' a connection into a properly formatted data frame
 #' @param contrasts the contrasts for categorical regressors
 #' @param sep if using a connection or file, which character is used as a separator between elements?
@@ -38,17 +38,17 @@ iolm = function(form, data, dfpp=function(x) x,
                contrasts=NULL, tol=-1, sep=",", parallel=1) {
   call = match.call()
   if (is.data.frame(data)) {
-    cvs = xtx_and_xty(form, dfpp(data),contrasts)
+    cvs = xtx_and_xty(form, data,contrasts)
     xtx = cvs$xtx
     xty = cvs$xty
     sum_y = cvs$sum_y
     n = cvs$n
     contrasts=cvs$contrasts
-  } else if (is.character(data) || inherits(data, "connection")) {
+  } else {
     cvs = chunk.apply(data,
       function(x) {
         df = dfpp(x)
-        xtx_and_xty(form, data_frame_preprocessor(df), contrasts)
+        xtx_and_xty(form, df, contrasts)
       },
       CH.MERGE=list, parallel=parallel)
     xtx = Reduce(`+`, Map(function(x) x$xtx, cvs))
@@ -56,8 +56,6 @@ iolm = function(form, data, dfpp=function(x) x,
     sum_y = Reduce(`+`, Map(function(x) x$sum_y, cvs))
     n = Reduce(`+`, Map(function(x) x$n, cvs))
     contrasts = cvs[[1]]$contrasts
-  } else {
-    stop("Unknown input data type")
   }
   design_matrix_names = colnames(xtx)
   # Get rid of colinear variables.
@@ -96,6 +94,12 @@ iolm = function(form, data, dfpp=function(x) x,
   names(coefficients) = rownames(xtx)
   terms = terms(form)
   contrasts = contrasts
+  # If data was a connection then we set data to NULL to since it is not
+  # guaranteed to be "rewindable".
+  if (!is.data.frame(data) && 
+      (inherits(data, "connection") || inherits(data, "ChunkReader"))) {
+    data=NULL
+  }
   ret = list(coefficients=coefficients, call=call, terms=terms, 
              design_matrix_names=design_matrix_names, xtx=xtx, sum_y=sum_y,
              n=n, data=data, dfpp=dfpp, contrasts=contrasts, rank=ncol(xtx))
@@ -108,27 +112,30 @@ iolm = function(form, data, dfpp=function(x) x,
 #' @param object an object return from iolm
 #' @param parallel how many logical processor cores to use (default 1)
 #' @export
-summary.iolm = function(object, parallel=1, ...) {
+summary.iolm = function(object, parallel=1, data=NULL, ...) {
   call = match.call()
   terms = object$terms
+  if (is.null(data)) {
+    data = data$object
+  }
   if (is.data.frame(data)) {
     rss_chunk = yty_and_btxtxb(formula(object$terms), 
                                object$coefficients,
-                               object$dfpp(object$data),
+                               data,
                                object$coefficients,
                                object$sum_y/object$n)
     yty = rss_chunk$yty
     btxtxb = rss_chunk$btxtxb
     syy = rss_chunk$syy
     rss = rss_chunk$rss
-  } else if (is.character(object$data)) {
+  } else {
     #input = if (is.character(data)) input.file(data) else data
-    rss_chunks = chunk.apply(object$data,
+    rss_chunks = chunk.apply(data,
       function(x) {
         df = dfpp(x)
         yty_and_btxtxb(formula(object$terms),
                        object$coefficients, 
-                       object$dfpp(df), 
+                       df, 
                        object$contrasts,
                        object$sum_y/object$n)
       },
@@ -137,8 +144,6 @@ summary.iolm = function(object, parallel=1, ...) {
     btxtxb = Reduce(`+`, Map(function(x) x$btxtxb, rss_chunks))
     syy = Reduce(`+`, Map(function(x) x$syy, rss_chunks))
     rss = Reduce(`+`, Map(function(x) x$rss, rss_chunks))
-  } else {
-    stop("Unknown input data type")
   }
   rss_beta = yty - btxtxb
   df = c(length(object$design_matrix_names), 

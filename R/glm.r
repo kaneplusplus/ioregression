@@ -5,6 +5,7 @@ glm_kernel = function(y, mm, family, beta, deviance,
   weights = rep(1, nobs)
   if (is.null(beta)) {
     # It's the first iteration.
+    etastart = start = mustart = NULL
     eval(family$initialize)
     eta = family$linkfun(mustart)
   } else {
@@ -70,7 +71,6 @@ ioglm = function(form, family = gaussian(), data, dfpp=function(x) x,
   if (is.data.frame(data)) {
     # The data.frame implementation.
     for (i in 1:control$maxit) {
-      data = dfpp(data)
       mm = model.matrix(form, data, contrasts)
       if (control$trace)
         cat("iteration", i, "\n")
@@ -90,8 +90,6 @@ ioglm = function(form, family = gaussian(), data, dfpp=function(x) x,
       beta_old = beta
     }
   } else {
-    if (!is.character(data))
-      stop("Unsupported input type")
     # The iotools implementation.
     for (i in 1:control$maxit) {
       cvs = chunk.apply(data,
