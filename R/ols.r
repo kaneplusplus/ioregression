@@ -10,8 +10,7 @@ xtx_and_xty = function(formula, df, contrasts) {
                           ncol=1))
   sum_y = sum(df[row.names(mm),as.character(formula)[2]])
   n = nrow(mm)
-  rm(df, mm)
-  list(xtx=xtx, xty=xty, sum_y=sum_y, n=n)
+  list(xtx=xtx, xty=xty, sum_y=sum_y, n=n, contrasts=attr(mm, "contrasts"))
 }
 
 # The chunk-wise operation for getting the RSS
@@ -44,6 +43,7 @@ iolm = function(form, data, dfpp=function(x) x,
     xty = cvs$xty
     sum_y = cvs$sum_y
     n = cvs$n
+    contrasts=cvs$contrasts
   } else if (is.character(data) || inherits(data, "connection")) {
     cvs = chunk.apply(data,
       function(x) {
@@ -55,6 +55,7 @@ iolm = function(form, data, dfpp=function(x) x,
     xty = Reduce(`+`, Map(function(x) x$xty, cvs))
     sum_y = Reduce(`+`, Map(function(x) x$sum_y, cvs))
     n = Reduce(`+`, Map(function(x) x$n, cvs))
+    contrasts = cvs[[1]]$contrasts
   } else {
     stop("Unknown input data type")
   }

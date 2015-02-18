@@ -23,7 +23,7 @@ glm_kernel = function(y, mm, family, beta, deviance,
   deviance = sum(family$dev.resids(y, g, weights))
   list(XTWX=crossprod(mm, W * mm), XTWz=crossprod(mm, W*z), 
        deviance=deviance, cumulative_weight=nobs,
-       aic=aic, RSS=RSS)
+       aic=aic, RSS=RSS, contrasts=attr(mm, "contrasts"))
 }
 
 #' Data frame preprocessor 
@@ -83,6 +83,7 @@ ioglm = function(form, family = gaussian(), data, dfpp=function(x) x,
       aic = glm_m$aic
       RSS = glm_m$RSS
       cumulative_weight = glm_m$cumulative_weight
+      contrasts = glm_m$contrasts
       beta = solve(XTWX, tol=2*.Machine$double.eps) %*% XTWz
       if (!is.null(beta_old) && 
           as.vector(sqrt(crossprod(beta-beta_old))) < control$epsilon) break 
@@ -104,6 +105,7 @@ ioglm = function(form, family = gaussian(), data, dfpp=function(x) x,
       XTWz = Reduce(`+`, Map(function(x) x$XTWz, cvs))
       aic = Reduce(`+`, Map(function(x) x$aic, cvs))
       RSS = Reduce(`+`, Map(function(x) x$RSS, cvs))
+      contrasts = cvs[[1]]$contrasts
       deviance = Reduce(`+`, Map(function(x) x$deviance, cvs))
       cumulative_weight = Reduce(`+`, Map(function(x) x$cumulative_weight, cvs))
       # TODO: Add checking for singularities here.
