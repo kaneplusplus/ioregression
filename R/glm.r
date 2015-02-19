@@ -30,16 +30,20 @@ glm_kernel = function(y, mm, family, beta, deviance,
 #' Data frame preprocessor 
 #' 
 #' @param col_types the column types of the data
+#' @param col_names the column names of the data
 #' @param sep the column separator
 #' @param dfpp_fun the data.frame preprocessing function
 #' @export
-dfpp_gen = function(col_names, col_types, sep, dfpp_fun=function(x) x) {
+dfpp_gen = function(col_types, col_names=NULL, sep=",", 
+                    dfpp_fun=function(x) x) {
   col_names = col_names
   col_types = col_types
   sep = sep
   dfpp_fun = dfpp_fun
   function(x) {
-    dfpp_fun(dstrsplit(x, col_types=col_types, sep))
+    x = dstrsplit(x, col_types=col_types, sep)
+    colnames(x) = col_names
+    dfpp_fun(x)
   }
 }
 
@@ -59,7 +63,7 @@ dfpp_gen = function(col_names, col_types, sep, dfpp_fun=function(x) x) {
 #' @param sep if using a connection or file, which character is used as a separator between elements?
 #' @param parallel how many logical processor cores to use (default 1)
 #' @export
-ioglm = function(form, family = gaussian(), data, dfpp=function(x) x,
+ioglm = function(form, family = gaussian(), data, dfpp,
                  beta_start=NULL, control=list(maxit=25, epsilon=1e-08, 
                  trace=FALSE), method = "irls",
                  contrasts = NULL, sep=",", parallel=1, ...) {
@@ -90,6 +94,9 @@ ioglm = function(form, family = gaussian(), data, dfpp=function(x) x,
       beta_old = beta
     }
   } else {
+    if (dfpp) {
+      stop("You must specify a data frame preprocessing function when performing chunked regressions") 
+    }
     # The iotools implementation.
     for (i in 1:control$maxit) {
       cvs = chunk.apply(data,

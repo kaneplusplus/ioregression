@@ -34,7 +34,7 @@ yty_and_btxtxb= function(formula, b, df, contrasts, y_mean) {
 #' @param sep if using a connection or file, which character is used as a separator between elements?
 #' @param parallel how many logical processor cores to use (default 1)
 #' @export
-iolm = function(form, data, dfpp=function(x) x,
+iolm = function(form, data, dfpp,
                contrasts=NULL, tol=-1, sep=",", parallel=1) {
   call = match.call()
   if (is.data.frame(data)) {
@@ -102,7 +102,8 @@ iolm = function(form, data, dfpp=function(x) x,
   }
   ret = list(coefficients=coefficients, call=call, terms=terms, 
              design_matrix_names=design_matrix_names, xtx=xtx, sum_y=sum_y,
-             n=n, data=data, dfpp=dfpp, contrasts=contrasts, rank=ncol(xtx))
+             n=n, data=data, dfpp=dfpp, contrasts=contrasts, rank=ncol(xtx),
+             parallel=parallel)
   class(ret) = "iolm"
   ret
 }
@@ -112,11 +113,14 @@ iolm = function(form, data, dfpp=function(x) x,
 #' @param object an object return from iolm
 #' @param parallel how many logical processor cores to use (default 1)
 #' @export
-summary.iolm = function(object, parallel=1, data=NULL, ...) {
+summary.iolm = function(object, parallel, data, ...) {
   call = match.call()
   terms = object$terms
-  if (is.null(data)) {
-    data = data$object
+  if (missing(data)) {
+    data = object$data
+  }
+  if (missing(parallel)) {
+    parallel = object$parallel
   }
   if (is.data.frame(data)) {
     rss_chunk = yty_and_btxtxb(formula(object$terms), 
@@ -132,7 +136,7 @@ summary.iolm = function(object, parallel=1, data=NULL, ...) {
     #input = if (is.character(data)) input.file(data) else data
     rss_chunks = chunk.apply(data,
       function(x) {
-        df = dfpp(x)
+        df = object$dfpp(x)
         yty_and_btxtxb(formula(object$terms),
                        object$coefficients, 
                        df, 
@@ -168,7 +172,8 @@ summary.iolm = function(object, parallel=1, data=NULL, ...) {
   ret = list(call=call, terms=object$terms, coefficients=coefficients,
        aliased=aliased, sigma=sigma, df=df, r.squared=r_squared,
        adj.r.squared=adj_r_squared, fstatistic=fstatistic, 
-       cov.unscaled=cov_unscaled, data=object$data, dfpp=object$dfpp)
+       cov.unscaled=cov_unscaled, data=object$data, dfpp=object$dfpp,
+       parallel=parallel)
   class(ret) = "summary.lm"
   ret
 }
