@@ -94,9 +94,6 @@ ioglm = function(form, family = gaussian(), data, dfpp,
       beta_old = beta
     }
   } else {
-    if (dfpp) {
-      stop("You must specify a data frame preprocessing function when performing chunked regressions") 
-    }
     # The iotools implementation.
     for (i in 1:control$maxit) {
       cvs = chunk.apply(data,

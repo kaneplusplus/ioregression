@@ -1,17 +1,19 @@
 library(testthat)
 library(ioregression)
 
+# Download the data to a temp directory.
 temp_dir = tempdir()
 bz_file_name = file.path(temp_dir, "2008.csv.bz2")
 data_file_name = file.path(temp_dir, "2008.csv")
 
 if (!file.exists(data_file_name)) {
-    # Download the 2008 airline data.
+    # Download the 2008 airline data and decompress it.
     download.file("http://stat-computing.org/dataexpo/2009/2008.csv.bz2", 
                   bz_file_name)
     system(paste("bzip2 -d ", bz_file_name))
 }
 
+# The data column names and types.
 col_names = c("Year", "Month", "DayofMonth", "DayOfWeek", "DepTime", 
               "CRSDepTime", "ArrTime", "CRSArrTime", "UniqueCarrier", 
               "FlightNum", "TailNum", "ActualElapsedTime", "CRSElapsedTime", 
@@ -27,10 +29,9 @@ col_types = c(rep("integer", 8), "character", "integer", "character",
 # Here's the formula we'll fix on. 
 form = Delayed ~ DayOfWeek 
 
-# Create the preprocessing function 
-dfpp = dfpp_gen(col_names, col_types, sep=",", 
+# Create the preprocessing function.
+dfpp = dfpp_gen(col_types, col_names, sep=",", 
                 function(x) { 
-                  colnames(x) = col_names 
                   # Get rid of the header row. 
                   if (x$UniqueCarrier[1] == "UniqueCarrier") 
                     x = x[-1,] 
@@ -38,7 +39,7 @@ dfpp = dfpp_gen(col_names, col_types, sep=",",
                   x$DayOfWeek = factor(x$DayOfWeek, 1:7, 
                                        labels=as.character(1:7)) 
                   x 
-                }) 
+                })
 
 # Compare this
 iofit = ioglm(form, binomial(), data_file_name, dfpp)
