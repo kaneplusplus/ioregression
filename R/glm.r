@@ -139,6 +139,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
   var_res = RSS/resdf
   dispersion = if (family$family %in% c("poisson", "binomial")) 1  else var_res
 
+  if (missing(dfpp)) dfpp = NULL
   ret = list(coefficients=beta, 
     family=family,
     deviance = deviance,

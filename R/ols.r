@@ -100,6 +100,7 @@ iolm = function(form, data, dfpp,
       (inherits(data, "connection") || inherits(data, "ChunkReader"))) {
     data=NULL
   }
+  if (missing(dfpp)) dfpp=NULL
   ret = list(coefficients=coefficients, call=call, terms=terms, 
              design_matrix_names=design_matrix_names, xtx=xtx, sum_y=sum_y,
              n=n, data=data, dfpp=dfpp, contrasts=contrasts, rank=ncol(xtx),
