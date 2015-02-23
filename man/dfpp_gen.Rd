@@ -4,10 +4,12 @@
 \alias{dfpp_gen}
 \title{Data frame preprocessor}
 \usage{
-dfpp_gen(col_names, col_types, sep, dfpp_fun = function(x) x)
+dfpp_gen(col_types, col_names = NULL, sep = ",", dfpp_fun = function(x) x)
 }
 \arguments{
 \item{col_types}{the column types of the data}
+
+\item{col_names}{the column names of the data}
 
 \item{sep}{the column separator}
 

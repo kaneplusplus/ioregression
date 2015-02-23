@@ -4,15 +4,15 @@
 \alias{iolm}
 \title{Perform a linear regression}
 \usage{
-iolm(formula, data, data_frame_preprocessor = function(x) x,
-  contrasts = NULL, tol = -1, sep = ",", parallel = 1)
+iolm(form, data, dfpp, contrasts = NULL, tol = -1, sep = ",",
+  parallel = 1)
 }
 \arguments{
-\item{formula}{the formula for the regression}
+\item{form}{the formula for the regression}
 
 \item{data}{a connection to read data from}
 
-\item{data_frame_preprocessor}{a function that turns the data read from
+\item{dfpp}{a function that turns the data read from
 a connection into a properly formatted data frame}
 
 \item{contrasts}{the contrasts for categorical regressors}

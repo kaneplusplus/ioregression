@@ -4,17 +4,10 @@
 \alias{summary.iolm}
 \title{Get the regression diagnostics for a linear regression}
 \usage{
-\method{summary}{iolm}(object, data, data_frame_preprocessor = function(x) x,
-  sep = ",", parallel = 1, ...)
+\method{summary}{iolm}(object, parallel, data, ...)
 }
 \arguments{
 \item{object}{an object return from iolm}
-
-\item{data}{a data.frame or connection to the data set where training was performed.}
-
-\item{data_frame_preprocessor}{any preprocessing that needs to be performed on the data}
-
-\item{sep}{if using a connection or file, which character is used as a separator between elements?}
 
 \item{parallel}{how many logical processor cores to use (default 1)}
 }

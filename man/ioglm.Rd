@@ -4,10 +4,9 @@
 \alias{ioglm}
 \title{Perform a generalized linear regression}
 \usage{
-ioglm(form, family = gaussian(), data, dfpp = function(x) x,
-  beta_start = NULL, control = list(maxit = 25, epsilon = 1e-08, trace =
-  FALSE), method = "irls", contrasts = NULL, sep = ",", parallel = 1,
-  ...)
+ioglm(form, family = gaussian(), data, dfpp, beta_start = NULL,
+  control = list(maxit = 25, epsilon = 1e-08, trace = FALSE),
+  method = "irls", contrasts = NULL, sep = ",", parallel = 1, ...)
 }
 \arguments{
 \item{form}{an object of class ‘"formula"’ (or one that can be coerced to that class): a symbolic description of the model to be fitted.}

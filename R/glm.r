@@ -1,6 +1,6 @@
 
 glm_kernel = function(y, mm, family, beta, deviance,
-                      cumulative_weight) {
+                      cumulative_weight, total_obs) {
   nobs = length(y)
   weights = rep(1, nobs)
   if (is.null(beta)) {
@@ -22,8 +22,10 @@ glm_kernel = function(y, mm, family, beta, deviance,
   }
   RSS = sum(W*residuals^2)
   deviance = sum(family$dev.resids(y, g, weights))
+  stop("here")
+  null_dev = sum(family$dev.resids(y, , weights))
   list(XTWX=crossprod(mm, W * mm), XTWz=crossprod(mm, W*z), 
-       deviance=deviance, cumulative_weight=nobs,
+       deviance=deviance, null_dev=null_dev, cumulative_weight=nobs,
        aic=aic, RSS=RSS, contrasts=attr(mm, "contrasts"))
 }
 
@@ -86,6 +88,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
       deviance = glm_m$deviance
       aic = glm_m$aic
       RSS = glm_m$RSS
+      null_dev=glm_m$null_dev
       cumulative_weight = glm_m$cumulative_weight
       contrasts = glm_m$contrasts
       beta = solve(XTWX, tol=2*.Machine$double.eps) %*% XTWz
@@ -107,6 +110,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
       XTWz = Reduce(`+`, Map(function(x) x$XTWz, cvs))
       aic = Reduce(`+`, Map(function(x) x$aic, cvs))
       RSS = Reduce(`+`, Map(function(x) x$RSS, cvs))
+      null_dev = Reduce(`+`, Map(function(x) x$null_dev, cvs))
       contrasts = cvs[[1]]$contrasts
       deviance = Reduce(`+`, Map(function(x) x$deviance, cvs))
       cumulative_weight = Reduce(`+`, Map(function(x) x$cumulative_weight, cvs))
@@ -137,7 +141,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
   resdf = num_obs - rank
 
   var_res = RSS/resdf
-  dispersion = if (family$family %in% c("poisson", "binomial")) 1  else var_res
+  dispersion = if (family$family %in% c("poisson", "binomial")) 1 else var_res
 
   if (missing(dfpp)) dfpp = NULL
   ret = list(coefficients=beta, 
@@ -151,11 +155,13 @@ ioglm = function(form, family = gaussian(), data, dfpp,
     xtwz=XTWz,
     iter=i, 
     dispersion=dispersion,
+    rss=RSS,
     converged=converged, 
     formula=form,
     call=call,
     num_obs=num_obs,
     nulldf=nulldf,
+    null_dev=null_dev,
     resdf=resdf,
     terms=terms.formula(form),
     control=control,
@@ -169,21 +175,44 @@ ioglm = function(form, family = gaussian(), data, dfpp,
 #' 
 #' @param object an object return from ioglm
 #' @param data a data.frame or connection to the data set where training was performed.
-#' @param data_frame_preprocessor any preprocessing that needs to be performed on the data
-#' @param sep if using a connection or file, which character is used as a separator between elements?
 #' @param parallel how many logical processor cores to use (default 1)
 #' @export
-summary.ioglm = function(object, data, data_frame_preprocessor=function(x) x,
-                         sep=",", parallel=1, ...) {
-  dispersion = NULL
-#  list(call,
-#      terms,
-#      family,
-#      deviance,
-#      aic,
-#      contrasts,
-#      df.residual,
-#      null.deviance,
-#      df.null,
-#      iter)
+summary.ioglm = function(object, data, parallel=1, ...) {
+  call = match.call()
+  terms = object$terms
+  if (missing(data)) {
+    data = object$data
+  }
+  if (missing(parallel)) {
+    parallel = object$parallel
+  }
+  dispersion = object$dispersion
+  inv_scatter = solve(object$xtwx)
+  standard_errors = sqrt(dispersion * diag(inv_scatter))
+  stat_vals = object$coefficients/standard_errors
+  if (object$family$family %in% c("binomial", "poisson")) {
+    p_vals = 2 * pnorm(abs(stat_vals), lower.tail=FALSE)
+  } else {
+    p_vals = 2 * pt(abs(stat_vals), df=object$df, lower.tail=FALSE)
+  }
+  
+  ret = list(call=call,
+       terms=terms,
+       family=object$family,
+       deviance=object$deviance,
+       aic=object$aic,
+       contrasts=object$contrasts,
+       df.residual=object$resdf,
+ #      null.deviance=object$null_dev,
+       df.null=object$nulldf,
+       iter=object$iter,
+       deviance.resid=NA,
+       coefficients=object$coefficients,
+       dispersion=object$dispersion,  
+       df=c(ncol(object$xtwx), object$resdf, ncol(object$xtwx)),
+       data=data,
+       cov.unscaled=inv_scatter,
+       cov.scaled=inv_scatter * dispersion)
+  class(ret) = c("ioglm", "glm", "lm")
+  ret
 }
