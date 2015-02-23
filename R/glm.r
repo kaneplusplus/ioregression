@@ -1,6 +1,6 @@
 
 glm_kernel = function(y, mm, family, beta, deviance,
-                      cumulative_weight, total_obs) {
+                      cumulative_weight, wtdmu) {
   nobs = length(y)
   weights = rep(1, nobs)
   if (is.null(beta)) {
@@ -20,13 +20,16 @@ glm_kernel = function(y, mm, family, beta, deviance,
   if (!is.null(deviance) && !is.null(cumulative_weight)) {
     aic = family$aic(y, cumulative_weight, g, weights, deviance)    
   }
+  null_dev = NULL
+  if (!is.null(cumulative_weight) && !is.null(wtdmu)) {
+    null_dev = sum(family$dev.resids(y, wtdmu, weights))
+  }
   RSS = sum(W*residuals^2)
   deviance = sum(family$dev.resids(y, g, weights))
-  stop("here")
-  null_dev = sum(family$dev.resids(y, , weights))
   list(XTWX=crossprod(mm, W * mm), XTWz=crossprod(mm, W*z), 
        deviance=deviance, null_dev=null_dev, cumulative_weight=nobs,
-       aic=aic, RSS=RSS, contrasts=attr(mm, "contrasts"))
+       aic=aic, RSS=RSS, contrasts=attr(mm, "contrasts"), 
+       wy=crossprod(weights, y))
 }
 
 #' Data frame preprocessor 
@@ -74,6 +77,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
   beta_old = beta_start
   cumulative_weight = NULL
   deviance = NULL
+  wtdmu = NULL
   if (is.data.frame(data)) {
     # The data.frame implementation.
     for (i in 1:control$maxit) {
@@ -81,7 +85,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
       if (control$trace)
         cat("iteration", i, "\n")
       glm_m = glm_kernel(data[row.names(mm),all.vars(form)[1]], mm, family, 
-                         beta_old, deviance, cumulative_weight)
+                         beta_old, deviance, cumulative_weight, wtdmu)
       # TODO: Add checking for singularities here.
       XTWX = glm_m$XTWX
       XTWz = glm_m$XTWz
@@ -90,6 +94,8 @@ ioglm = function(form, family = gaussian(), data, dfpp,
       RSS = glm_m$RSS
       null_dev=glm_m$null_dev
       cumulative_weight = glm_m$cumulative_weight
+      wtdmu = if (attributes(terms(form))$intercept) glm_m$wy/cumulative_weight
+              else family$linkinv(0)
       contrasts = glm_m$contrasts
       beta = solve(XTWX, tol=2*.Machine$double.eps) %*% XTWz
       if (!is.null(beta_old) && 
@@ -114,6 +120,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
       contrasts = cvs[[1]]$contrasts
       deviance = Reduce(`+`, Map(function(x) x$deviance, cvs))
       cumulative_weight = Reduce(`+`, Map(function(x) x$cumulative_weight, cvs))
+      null_dev = Reduce(`+`, Map(function(x) x$null_dev, cvs))
       # TODO: Add checking for singularities here.
       beta = solve(XTWX, tol=2*.Machine$double.eps) %*% XTWz
       if (!is.null(beta_old) && 
@@ -178,7 +185,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
 #' @param parallel how many logical processor cores to use (default 1)
 #' @export
 summary.ioglm = function(object, data, parallel=1, ...) {
-  call = match.call()
+  call = object$call
   terms = object$terms
   if (missing(data)) {
     data = object$data
@@ -195,7 +202,14 @@ summary.ioglm = function(object, data, parallel=1, ...) {
   } else {
     p_vals = 2 * pt(abs(stat_vals), df=object$df, lower.tail=FALSE)
   }
-  
+  coef_names = names(object$coefficients)
+  coefficients = cbind(object$coefficients, standard_errors, stat_vals, p_vals)
+  colnames(coefficients) = c("Estimate", "Std. Error", "z value", "Pr(>|z|)")
+  rownames(coefficients) = coef_names
+  if (object$family$family %in% c("binomial", "poisson"))
+    colnames(coefficients)[3] = "t value"
+  aliased = object$coefficients
+  aliased = FALSE
   ret = list(call=call,
        terms=terms,
        family=object$family,
@@ -203,16 +217,17 @@ summary.ioglm = function(object, data, parallel=1, ...) {
        aic=object$aic,
        contrasts=object$contrasts,
        df.residual=object$resdf,
- #      null.deviance=object$null_dev,
+       null.deviance=object$null_dev,
        df.null=object$nulldf,
        iter=object$iter,
        deviance.resid=NA,
-       coefficients=object$coefficients,
+       coefficients=coefficients,
+       aliased=aliased,
        dispersion=object$dispersion,  
        df=c(ncol(object$xtwx), object$resdf, ncol(object$xtwx)),
        data=data,
        cov.unscaled=inv_scatter,
        cov.scaled=inv_scatter * dispersion)
-  class(ret) = c("ioglm", "glm", "lm")
+  class(ret) = c("summary.glm")
   ret
 }

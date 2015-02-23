@@ -4,7 +4,6 @@ library(testthat)
 data = read.csv("http://www.ats.ucla.edu/stat/data/binary.csv")
 form = admit ~ gre + gpa + rank
 glmfit = glm(form, data=data, family = binomial())
-
 iofit = ioglm(form, data = data, family = binomial())
 
 expect_equal(iofit$coefficients, glmfit$coefficients)
@@ -18,4 +17,5 @@ expect_equal(iofit$formula, glmfit$formula)
 expect_equal(iofit$terms, glmfit$terms)
 expect_equal(iofit$contrasts, glmfit$contrasts)
 
-
+sg = summary(glmfit)
+s = summary(iofit)
