@@ -110,16 +110,21 @@ ioglm = function(form, family = gaussian(), data, dfpp,
           df = dfpp(x)
           mm = model.matrix(form, df, contrasts)
           glm_kernel(df[row.names(mm),all.vars(form)[1]], mm, family, beta_old,
-                     deviance, cumulative_weight)
+                     deviance, cumulative_weight, wtdmu)
       }, CH.MERGE=list, parallel=parallel)
       XTWX = Reduce(`+`, Map(function(x) x$XTWX, cvs))
       XTWz = Reduce(`+`, Map(function(x) x$XTWz, cvs))
       aic = Reduce(`+`, Map(function(x) x$aic, cvs))
       RSS = Reduce(`+`, Map(function(x) x$RSS, cvs))
       null_dev = Reduce(`+`, Map(function(x) x$null_dev, cvs))
+      cumulative_weight = Reduce(`+`, Map(function(x) x$cumulative_weight, cvs))
+      wtdmu = if(attributes(terms(form))$intercept) {
+        Reduce(`+`, Map(function(x) x$wy, cvs))/cumulative_weight
+      } else {
+        family$linkinv(0)
+      }
       contrasts = cvs[[1]]$contrasts
       deviance = Reduce(`+`, Map(function(x) x$deviance, cvs))
-      cumulative_weight = Reduce(`+`, Map(function(x) x$cumulative_weight, cvs))
       null_dev = Reduce(`+`, Map(function(x) x$null_dev, cvs))
       # TODO: Add checking for singularities here.
       beta = solve(XTWX, tol=2*.Machine$double.eps) %*% XTWz
