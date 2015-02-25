@@ -19,3 +19,18 @@ expect_equal(iofit$contrasts, glmfit$contrasts)
 
 sg = summary(glmfit)
 s = summary(iofit)
+
+expect_equal(s$terms, sg$terms)
+expect_equal(s$family, sg$family)
+expect_equal(s$deviance, sg$deviance)
+expect_equal(s$aic, sg$aic)
+expect_equal(s$contrasts, sg$contrasts)
+expect_equal(s$df.residual, sg$df.residual)
+expect_equal(s$null.deviance, sg$null.deviance)
+expect_equal(s$df.null, sg$df.null)
+expect_equal(s$coefficients, sg$coefficients)
+expect_equal(s$dispersion, sg$dispersion)
+expect_equal(s$df, sg$df)
+expect_equal(s$cov.unscaled, sg$cov.unscaled, tol=0.001)
+expect_equal(s$cov.scaled, sg$cov.scaled, tol=0.001)
+

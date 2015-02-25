@@ -204,10 +204,10 @@ summary.ioglm = function(object, data, parallel=1, ...) {
   }
   coef_names = names(object$coefficients)
   coefficients = cbind(object$coefficients, standard_errors, stat_vals, p_vals)
-  colnames(coefficients) = c("Estimate", "Std. Error", "z value", "Pr(>|z|)")
+  colnames(coefficients) = c("Estimate", "Std. Error", "t value", "Pr(>|z|)")
   rownames(coefficients) = coef_names
   if (object$family$family %in% c("binomial", "poisson"))
-    colnames(coefficients)[3] = "t value"
+    colnames(coefficients)[3] = "z value"
   aliased = object$coefficients
   aliased = FALSE
   ret = list(call=call,
