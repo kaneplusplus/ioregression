@@ -4,12 +4,10 @@
 \alias{summary.iolm}
 \title{Get the regression diagnostics for a linear regression}
 \usage{
-\method{summary}{iolm}(object, parallel, data, ...)
+\method{summary}{iolm}(object, ...)
 }
 \arguments{
 \item{object}{an object return from iolm}
-
-\item{parallel}{how many logical processor cores to use (default 1)}
 }
 \description{
 Get the regression diagnostics for a linear regression

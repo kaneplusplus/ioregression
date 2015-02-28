@@ -4,22 +4,32 @@
 \alias{iolm}
 \title{Perform a linear regression}
 \usage{
-iolm(form, data, dfpp, contrasts = NULL, tol = -1, sep = ",",
-  parallel = 1)
+iolm(formula, data, subset = NULL, weights = NULL, na.action = NULL,
+  offset = NULL, contrasts = NULL, tol = -1)
 }
 \arguments{
-\item{form}{the formula for the regression}
+\item{formula}{the formula for the regression}
 
-\item{data}{a connection to read data from}
+\item{data}{an abstract data frame, or something which can be
+coerced to one.}
 
-\item{dfpp}{a function that turns the data read from
-a connection into a properly formatted data frame}
+\item{subset}{an options character string, which will be evaluated in the
+frame of the data, to indicate which rows to include
+in the analysis}
 
-\item{contrasts}{the contrasts for categorical regressors}
+\item{weights}{a optional character string, which will be evaluated in the
+frame of the data, giving the sample weights for the regression}
 
-\item{sep}{if using a connection or file, which character is used as a separator between elements?}
+\item{na.action}{a function which indicates what should happen when the data
+contain 'NA's. See lm.fit for more details.}
 
-\item{parallel}{how many logical processor cores to use (default 1)}
+\item{offset}{a optional character string, which will be evaluated in the
+frame of the data, giving the offsets for the regression}
+
+\item{contrasts}{contrasts to use with the regression. See the \code{contrasts.arg}
+of \code{model.matrix.default}}
+
+\item{tol}{numeric tolerance. Set to -1 to ignore.}
 }
 \description{
 Perform a linear regression

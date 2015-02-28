@@ -1,10 +1,11 @@
 Package: ioregression
 Type: Package
 Title: Out-of-core regressions with connection inputs
-Version: 0.1
-Date: 2015-01-22
+Version: 0.2
+Date: 2015-02-28
 Author: Taylor Arnold, Michael J. Kane, Simon Urbanek
 Maintainer: Michael J. Kane <kaneplusplus@gmail.com>
 Description: This package implements out-of-core regression routines (OLS, GLM, LARS) and can be used with any input implemented as an R connection.
 Depends: iotools
+Imports: Matrix
 License: Apache License 2.0
