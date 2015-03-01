@@ -24,7 +24,7 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
   cvs = adf.apply(x=data, type="sparse.model",
           FUN=function(d) {
             if (nrow(d$x) == 0L) return(NULL)
-
+            if (!is.null(offset)) d$y = d$y - d$offset
             if (!is.null(d$w)) {
               if (any(d$w == 0)) {
                 ok = d$w != 0
@@ -94,7 +94,7 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
     ft = drop.terms(ft, drop_inds, keep.response=TRUE)
     form = formula(ft)
   }
-  coefficients = as.numeric(Matrix::solve(xtx,xty-xto)) #as.numeric(solve(xtx) %*% xty)
+  coefficients = as.numeric(Matrix::solve(xtx,xty))
   names(coefficients) = rownames(xtx)
   terms = terms(formula)
   contrasts = contrasts
