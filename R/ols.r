@@ -43,7 +43,6 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
             }
             return(list(xtx = Matrix::crossprod(d$x),
                         xty = Matrix::crossprod(d$x, d$y),
-                        xto = if (!is.null(offset)) Matrix::crossprod(d$x, d$y-d$offset) else NULL,
                         yty = Matrix::crossprod(d$y),
                         n = nrow(d$x),
                         sum_y = sum_y,
@@ -55,7 +54,6 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
   if (length(cvs) == 0L) stop("No valid data.")
   xtx = Reduce(`+`, Map(function(x) x$xtx, cvs))
   xty = Reduce(`+`, Map(function(x) x$xty, cvs))
-  xto = if (!is.null(offset)) Reduce(`+`, Map(function(x) x$xto, cvs)) else 0.0
   sum_y = Reduce(`+`, Map(function(x) x$sum_y, cvs))
   sum_w = Reduce(`+`, Map(function(x) x$sum_w, cvs))
   yty = Reduce(`+`, Map(function(x) x$yty, cvs))
@@ -100,7 +98,7 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
   contrasts = contrasts
 
   ret = list(coefficients=coefficients, call=call, terms=terms,
-             xtx=xtx, xty=xty, xto=xto, yty=yty,
+             xtx=xtx, xty=xty, yty=yty,
              sum_y=as.numeric(sum_y), sum_w=as.numeric(sum_w),
              n=n, data=data, contrasts=contrasts, rank=ncol(xtx))
   class(ret) = "iolm"
