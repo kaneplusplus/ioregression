@@ -18,7 +18,7 @@ glm_kernel = function(y, mm, family, beta, deviance,
   W = as.vector(gprime^2 / family$variance(g))
   aic = NULL
   if (!is.null(deviance) && !is.null(cumulative_weight)) {
-    aic = family$aic(y, cumulative_weight, g, weights, deviance)    
+    aic = family$aic(y, cumulative_weight, g, weights, deviance)
   }
   null_dev = NULL
   if (!is.null(cumulative_weight) && !is.null(wtdmu)) {
@@ -26,20 +26,20 @@ glm_kernel = function(y, mm, family, beta, deviance,
   }
   RSS = sum(W*residuals^2)
   deviance = sum(family$dev.resids(y, g, weights))
-  list(XTWX=crossprod(mm, W * mm), XTWz=crossprod(mm, W*z), 
+  list(XTWX=crossprod(mm, W * mm), XTWz=crossprod(mm, W*z),
        deviance=deviance, null_dev=null_dev, cumulative_weight=nobs,
-       aic=aic, RSS=RSS, contrasts=attr(mm, "contrasts"), 
+       aic=aic, RSS=RSS, contrasts=attr(mm, "contrasts"),
        wy=crossprod(weights, y))
 }
 
-#' Data frame preprocessor 
-#' 
+#' Data frame preprocessor
+#'
 #' @param col_types the column types of the data
 #' @param col_names the column names of the data
 #' @param sep the column separator
 #' @param dfpp_fun the data.frame preprocessing function
 #' @export
-dfpp_gen = function(col_types, col_names=NULL, sep=",", 
+dfpp_gen = function(col_types, col_names=NULL, sep=",",
                     dfpp_fun=function(x) x) {
   col_names = col_names
   col_types = col_types
@@ -57,7 +57,7 @@ dfpp_gen = function(col_types, col_names=NULL, sep=",",
 #' @param form an object of class ‘"formula"’ (or one that can be coerced to that class): a symbolic description of the model to be fitted.
 #' @param family a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function or the result of a call to a family function.
 #' @param data a connection to read data from
-#' @param dfpp the data frame preprocessor. a function that turns the 
+#' @param dfpp the data frame preprocessor. a function that turns the
 #' read data from a chunk into a properly formatted data frame
 #' @param beta_start starting values for the linear predictor.
 #' @param control a list of parameters for controlling the fitting process.
@@ -69,7 +69,7 @@ dfpp_gen = function(col_types, col_names=NULL, sep=",",
 #' @param parallel how many logical processor cores to use (default 1)
 #' @export
 ioglm = function(form, family = gaussian(), data, dfpp,
-                 beta_start=NULL, control=list(maxit=25, epsilon=1e-08, 
+                 beta_start=NULL, control=list(maxit=25, epsilon=1e-08,
                  trace=FALSE), method = "irls",
                  contrasts = NULL, sep=",", parallel=1, ...) {
   call = match.call()
@@ -84,7 +84,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
       mm = model.matrix(form, data, contrasts)
       if (control$trace)
         cat("iteration", i, "\n")
-      glm_m = glm_kernel(data[row.names(mm),all.vars(form)[1]], mm, family, 
+      glm_m = glm_kernel(data[row.names(mm),all.vars(form)[1]], mm, family,
                          beta_old, deviance, cumulative_weight, wtdmu)
       # TODO: Add checking for singularities here.
       XTWX = glm_m$XTWX
@@ -98,8 +98,8 @@ ioglm = function(form, family = gaussian(), data, dfpp,
               else family$linkinv(0)
       contrasts = glm_m$contrasts
       beta = solve(XTWX, tol=2*.Machine$double.eps) %*% XTWz
-      if (!is.null(beta_old) && 
-          as.vector(sqrt(crossprod(beta-beta_old))) < control$epsilon) break 
+      if (!is.null(beta_old) &&
+          as.vector(sqrt(crossprod(beta-beta_old))) < control$epsilon) break
       beta_old = beta
     }
   } else {
@@ -128,7 +128,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
       null_dev = Reduce(`+`, Map(function(x) x$null_dev, cvs))
       # TODO: Add checking for singularities here.
       beta = solve(XTWX, tol=2*.Machine$double.eps) %*% XTWz
-      if (!is.null(beta_old) && 
+      if (!is.null(beta_old) &&
           as.vector(sqrt(crossprod(beta-beta_old))) < control$epsilon) break
       beta_old = beta
     }
@@ -156,7 +156,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
   dispersion = if (family$family %in% c("poisson", "binomial")) 1 else var_res
 
   if (missing(dfpp)) dfpp = NULL
-  ret = list(coefficients=beta, 
+  ret = list(coefficients=beta,
     family=family,
     deviance = deviance,
     aic=aic,
@@ -165,10 +165,10 @@ ioglm = function(form, family = gaussian(), data, dfpp,
     rank=rank,
     xtwx=XTWX,
     xtwz=XTWz,
-    iter=i, 
+    iter=i,
     dispersion=dispersion,
     rss=RSS,
-    converged=converged, 
+    converged=converged,
     formula=form,
     call=call,
     num_obs=num_obs,
@@ -184,7 +184,7 @@ ioglm = function(form, family = gaussian(), data, dfpp,
 }
 
 #' Get the regression diagnostics for a linear regression
-#' 
+#'
 #' @param object an object return from ioglm
 #' @param data a data.frame or connection to the data set where training was performed.
 #' @param parallel how many logical processor cores to use (default 1)
@@ -228,7 +228,7 @@ summary.ioglm = function(object, data, parallel=1, ...) {
        deviance.resid=NA,
        coefficients=coefficients,
        aliased=aliased,
-       dispersion=object$dispersion,  
+       dispersion=object$dispersion,
        df=c(ncol(object$xtwx), object$resdf, ncol(object$xtwx)),
        data=data,
        cov.unscaled=inv_scatter,

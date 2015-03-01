@@ -24,9 +24,31 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
   cvs = adf.apply(x=data, type="sparse.model",
           FUN=function(d) {
             if (nrow(d$x) == 0L) return(NULL)
-            return(list(xtx = Matrix::crossprod(d$x), xty = Matrix::crossprod(d$x, d$y),
+
+            if (!is.null(d$w)) {
+              if (any(d$w == 0)) {
+                ok = d$w != 0
+                d$w = d$w[ok]
+                d$x = d$x[ok,,drop = FALSE]
+                d$y = d$y[ok]
+                if (!is.null(d$offset)) d$offset = d$offset[ok]
+              }
+              sum_y = sum(d$y * d$w)
+              sum_w = sum(d$w)
+              d$x = d$x * sqrt(d$w)
+              d$y = d$y * sqrt(d$w)
+            } else {
+              sum_y = sum(d$y)
+              sum_w = nrow(d$x)
+            }
+            return(list(xtx = Matrix::crossprod(d$x),
+                        xty = Matrix::crossprod(d$x, d$y),
                         xto = if (!is.null(offset)) Matrix::crossprod(d$x, d$y-d$offset) else NULL,
-                        yty = Matrix::crossprod(d$y), n = nrow(d$x), sum_y = sum(d$y)))
+                        yty = Matrix::crossprod(d$y),
+                        n = nrow(d$x),
+                        sum_y = sum_y,
+                        sum_w = sum_w))
+
           },formula=formula,subset=subset,weights=weights,
             na.action=na.action, offset=offset, contrasts=contrasts)
   cvs = cvs[!sapply(cvs,is.null)]
@@ -35,11 +57,10 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
   xty = Reduce(`+`, Map(function(x) x$xty, cvs))
   xto = if (!is.null(offset)) Reduce(`+`, Map(function(x) x$xto, cvs)) else 0.0
   sum_y = Reduce(`+`, Map(function(x) x$sum_y, cvs))
+  sum_w = Reduce(`+`, Map(function(x) x$sum_w, cvs))
   yty = Reduce(`+`, Map(function(x) x$yty, cvs))
   n = Reduce(`+`, Map(function(x) x$n, cvs))
   contrasts = cvs[[1]]$contrasts
-
-  design_matrix_names = colnames(xtx)
 
   # Get rid of colinear variables.
   ch = chol(xtx, pivot=TRUE, tol=tol)
@@ -80,8 +101,8 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
 
   ret = list(coefficients=coefficients, call=call, terms=terms,
              xtx=xtx, xty=xty, xto=xto, yty=yty,
-             sum_y=as.numeric(sum_y), n=n, data=data,
-             contrasts=contrasts, rank=ncol(xtx))
+             sum_y=as.numeric(sum_y), sum_w=as.numeric(sum_w),
+             n=n, data=data, contrasts=contrasts, rank=ncol(xtx))
   class(ret) = "iolm"
   ret
 }
@@ -90,13 +111,13 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
 #'
 #' @param object an object return from iolm
 #' @export
-summary.iolm = function(object, ...) {
+summary.iolm = function(object, TEST, ...) {
   call = match.call()
 
   beta = coef(object)
   btxtxb = t(beta) %*% object$xtx %*% beta
   rss = object$yty + btxtxb - 2 * t(beta) %*% object$xty
-  tss = object$yty - object$sum_y^2 / object$n
+  tss = object$yty - object$sum_y^2 / object$sum_w
   mss <- if (attr(object$terms, "intercept"))
             (tss - rss) else as.numeric(btxtxb)
 
