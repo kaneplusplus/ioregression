@@ -1,6 +1,12 @@
 #' Perform a lasso or stepwise regression
 #'
-#' @param formula the formual for the regression
+#' This function takes a pre-computed iolm object,
+#' and applies the Least Angle Regression (LARs)
+#' algorithm to it. By using the iolm object, this
+#' function can run without needing to make an additional
+#' pass over the data.
+#'
+#' @param object the formual for the regression
 #' @param data a connection to read data from
 #' @param data_frame_preprocessor a function that turns the data read from
 #' a connection into a properly formatted data frame
@@ -12,40 +18,28 @@
 #' @param eps  An effective zero
 #' @param max.steps Limit the number of steps taken
 #' @export
-iolars = function(formula, data, data_frame_preprocessor=function(x) x,
-                  type = c("lasso", "lar", "forward.stagewise","stepwise"),
-                  contrasts=NULL, sep=",", eps = .Machine$double.eps,
+iolars = function(object, type = c("lasso", "lar", "forward.stagewise","stepwise"),
+                  normalize=TRUE, intercept=TRUE, sep=",", eps = .Machine$double.eps,
                   max.steps = NULL) {
-  call = match.call()
-  if (is.data.frame(data)) {
-    cvs = xtx_and_xty(formula, data_frame_preprocessor(data),contrasts)
-    xtx = cvs$xtx
-    xty = cvs$xty
-    sum_y = cvs$sum_y
-    n = cvs$n
-  } else if (is.character(data) || inherits(data, "connection")) {
-    input = if (is.character(data)) input.file(data) else data
-    cvs = chunk.apply(input,
-      function(x) {
-        df = dstrsplit(x, col_types=col_classes, sep=",")
-        xtx_and_xty(formula, data_frame_preprocessor(df), contrasts)
-      },
-      CH.MERGE=list)
-    xtx = Reduce(`+`, Map(function(x) x$xtx, cvs))
-    xty = Reduce(`+`, Map(function(x) x$xty, cvs))
-    sum_y = Reduce(`+`, Map(function(x) x$sum_y, cvs))
-    n = Reduce(`+`, Map(function(x) x$n, cvs))
-  } else {
-    stop("Unknown input data type")
-  }
-  design_matrix_names = colnames(xtx)
-  obj = lars_par(xtx, xty, type = type, eps = eps, max.steps = max.steps)
+  if (!inherits(object, "iolm"))
+    stop("input to object must be an iolm object! See ?ioregression::iolm for more info.")
 
-  ret = list(coefficients=obj$beta, lambda=obj$lambda, call=call,
-             design_matrix_names=design_matrix_names, xtx=xtx, sum_y=sum_y,
-             n=n)
-  class(ret) = "iolars"
-  ret
+  if (attr(out$terms, "intercept")) {
+    XtX = as.matrix(object$xtx)[-1,-1]
+    XtY = as.matrix(object$xty)[-1]
+    mean_x = as.numeric(object$mean_x)[-1]
+  } else {
+    XtX = as.matrix(object$xtx)
+    XtY = as.matrix(object$xty)
+    mean_x = as.numeric(object$mean_x)
+  }
+
+  obj = lars_par(XtX, XtY, as.numeric(object$yty),
+                  n = object$n, mean_x=mean_x, mean_y=out$sum_y / out$n,
+                  type = type, normalize=normalize,
+                  intercept=intercept, eps = eps, max.steps = max.steps)
+  obj$call = match.call()
+  obj
 }
 
 
@@ -54,14 +48,18 @@ iolars = function(formula, data, data_frame_preprocessor=function(x) x,
 #'
 #' @param XtX precomputed XtX matrix
 #' @param XtY precomputed XtY vector
+#' @param YtY precomputed YtY value
+#' @param n   number of data points in the original X matrix
 #' @param type One of "lasso", "lar", "forward.stagewise" or "stepwise". The
 #'          names can be abbreviated to any unique substring. Default is
 #'          "lasso".
 #' @param eps  An effective zero
 #' @param max.steps Limit the number of steps taken;
 lars_par <-
-function(XtX, XtY, type = c("lasso", "lar", "forward.stagewise","stepwise"),
-          eps = .Machine$double.eps, max.steps = NULL)
+function(XtX, XtY, YtY, n, mean_x, mean_y,
+          type = c("lasso", "lar", "forward.stagewise","stepwise"),
+          normalize=TRUE, intercept=FALSE, eps = .Machine$double.eps,
+          max.steps = NULL)
 {
 ### Lazy hack for now, rather than fiddling with the rest of the code
   Gram = XtX
@@ -69,8 +67,6 @@ function(XtX, XtY, type = c("lasso", "lar", "forward.stagewise","stepwise"),
   trace = FALSE
   x = matrix(0)
   y = 0L
-  normalize=FALSE
-  intercept=FALSE
   use.Gram = TRUE
 
 ### program automatically centers and standardizes predictors by default.
@@ -94,7 +90,7 @@ function(XtX, XtY, type = c("lasso", "lar", "forward.stagewise","stepwise"),
 
   # Taylor Edit:
   # OLD: nm <- dim(x)
-  nm = c(length(Cvec),ncol(Gram))
+  nm = c(n,ncol(Gram))
   n <- nm[1]
   m <- nm[2]
   im <- inactive <- seq(m)
@@ -102,43 +98,22 @@ function(XtX, XtY, type = c("lasso", "lar", "forward.stagewise","stepwise"),
   vn <- dimnames(x)[[2]]
 ### Center x and y, and scale x, and save the means and sds
   if(intercept){
-    meanx <- drop(one %*% x)/n
-    x <- scale(x, meanx, FALSE) # centers x
-    mu <- mean(y)
-    y <- drop(y - mu)
-  }
-  else {
-    meanx <- rep(0,m)
+    mu <- mean_y
+    Cvec = Cvec - n*mean_x*mean_y
+    Gram = Gram - outer(mean_x,mean_x)*n
+  } else {
+    mean_x = rep(0,m)
     mu <- 0
-    y <- drop(y)
   }
   if(normalize){
-    normx <- sqrt(drop(one %*% (x^2)))
-    nosignal<-normx/sqrt(n) < eps
-    if(any(nosignal))# ignore variables with too small a variance
-      {
-        ignores<-im[nosignal]
-        inactive<-im[-ignores]
-        normx[nosignal]<-eps*sqrt(n)
-        if(trace)
-          cat("LARS Step 0 :\t", sum(nosignal), "Variables with Variance < eps; dropped for good\n")  #
-      }
-    else ignores <- NULL #singularities; augmented later as well
+    normx <- sqrt(diag(Gram))
     names(normx) <- NULL
-    x <- scale(x, FALSE, normx) # scales x
-  }
-  else {
+    Gram = Gram / outer(normx,normx)
+    Cvec = Cvec / normx
+  } else {
     normx <- rep(1,m)
-    ignores <- NULL
   }
-  if(use.Gram & missing(Gram)) {
-    if(m > 500 && n < m)
-      cat("There are more than 500 variables and n<m;\nYou may wish to restart and set use.Gram=FALSE\n"
-          )
-    if(trace)
-      cat("Computing X'X .....\n")
-    Gram <- t(x) %*% x  #Time saving
-  }
+  ignores <- NULL
   # Taylor Edits:
   # Cvec <- drop(t(y) %*% x)
   # ssy <- sum(y^2) ### Some initializations
@@ -313,29 +288,28 @@ function(XtX, XtY, type = c("lasso", "lar", "forward.stagewise","stepwise"),
     cat("Computing residuals, RSS etc .....\n")
 
   # Taylor Edit:
-  # residuals <- y - x %*% t(beta)
-  # beta <- scale(beta, FALSE, normx)
-  # RSS <- apply(residuals^2, 2, sum)
-  # R2 <- 1 - RSS/RSS[1]
-  residuals <- RSS <- R2 <- NULL
+  beta <- scale(beta, FALSE, normx)
+  MtM = XtX - outer(mean_x,mean_x)*n
+  RSS = drop(YtY + diag(beta %*% MtM %*% t(beta)) - 2 * beta %*% XtY
+             - mu^2*n + 2 * n * mu * beta %*% mean_x)
+  R2 <- drop(1 - RSS/RSS[1])
   actions=actions[seq(k)]
   netdf=sapply(actions,function(x)sum(sign(x)))
   df=cumsum(netdf)### This takes into account drops
-  # if(intercept)df=c(Intercept=1,df+1)
-  # else df=c(Null=0,df)
-  # rss.big=rev(RSS)[1]
-  # df.big=n-rev(df)[1]
-  # if(rss.big<eps|df.big<eps)sigma2=NaN
-  # else
-  #   sigma2=rss.big/df.big
-  # Cp <- RSS/sigma2 - n + 2 * df
-  # attr(Cp,"sigma2")=sigma2
-  # attr(Cp,"n")=n
-  Cp <- NULL
-  object <- list(call = call, type = TYPE, df=df, lambda=lambda,R2 = R2, RSS = RSS, Cp = Cp,
+  if(intercept) df=c(Intercept=1,df+1)
+    else df=c(Null=0,df)
+  rss.big=rev(RSS)[1]
+  df.big=n-rev(df)[1]
+  if(rss.big<eps|df.big<eps) sigma2=NaN
+   else sigma2=rss.big/df.big
+  Cp <- drop(RSS/sigma2 - n + 2 * df)
+  attr(Cp,"sigma2")=sigma2
+  attr(Cp,"n")=n
+  attributes(Gram)$dimnames <- NULL
+  object <- list(call = call, type = TYPE, df=df, lambda=lambda, R2 = R2, RSS = RSS, Cp = Cp,
                  actions = actions[seq(k)], entry = first.in, Gamrat = Gamrat,
                  arc.length = arc.length, Gram = if(use.Gram) Gram else NULL,
-                 beta = beta, mu = mu, normx = normx, meanx = meanx)
+                 beta = beta, mu = mu, normx = normx, meanx = mean_x)
   class(object) <- "lars"
   object
 }
