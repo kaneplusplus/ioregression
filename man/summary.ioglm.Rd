@@ -4,7 +4,7 @@
 \alias{summary.ioglm}
 \title{Get the regression diagnostics for a linear regression}
 \usage{
-summary.ioglm(object, data, parallel = 1, ...)
+\method{summary}{ioglm}(object, data, parallel = 1, ...)
 }
 \arguments{
 \item{object}{an object return from ioglm}
@@ -12,6 +12,8 @@ summary.ioglm(object, data, parallel = 1, ...)
 \item{data}{a data.frame or connection to the data set where training was performed.}
 
 \item{parallel}{how many logical processor cores to use (default 1)}
+
+\item{...}{optional, currently unused, arguments}
 }
 \description{
 Get the regression diagnostics for a linear regression

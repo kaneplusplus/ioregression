@@ -9,7 +9,7 @@ ioglm(form, family = gaussian(), data, dfpp, beta_start = NULL,
   method = "irls", contrasts = NULL, sep = ",", parallel = 1, ...)
 }
 \arguments{
-\item{form}{an object of class ‘"formula"’ (or one that can be coerced to that class): a symbolic description of the model to be fitted.}
+\item{form}{an object of class \code{formula} (or one that can be coerced to that class): a symbolic description of the model to be fitted.}
 
 \item{family}{a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function or the result of a call to a family function.}
 
@@ -26,11 +26,13 @@ read data from a chunk into a properly formatted data frame}
 iteratively reweighted least squares (irls). Support for stochastic gradient
 decent is coming.}
 
-\item{contrasts}{an optional list. See the ‘contrasts.arg’ of ‘model.matrix.default’.}
+\item{contrasts}{an optional list. See the 'contrasts.arg' of 'model.matrix.default'.}
 
 \item{sep}{if using a connection or file, which character is used as a separator between elements?}
 
 \item{parallel}{how many logical processor cores to use (default 1)}
+
+\item{...}{other options; currently unused}
 }
 \description{
 Perform a generalized linear regression

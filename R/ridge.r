@@ -71,6 +71,7 @@ iolm.ridge = function(object, lambda=seq(0,1,by=0.1), normalize=TRUE) {
 
 #' Print an ioridge object
 #'
+#' @method print iolm.ridge
 #' @param x   an iolars object to print the summary of
 #' @param ... other inputs; currently unused
 #' @export
@@ -85,25 +86,27 @@ print.iolm.ridge = function (x, ...) {
 
 #' Summarize a ridge regression for a particular value of lambda
 #'
-#' @param x   an iolars object to print the summary of
-#' @param ... other inputs; currently unused
+#' @method summary iolm.ridge
+#' @param object   an iolars object to print the summary of
+#' @param lambda   a single lambda value
+#' @param ...      other inputs; currently unused
 #' @export
-summary.iolm.ridge = function (x, lambda=x$lambda[which.min(x$AIC)], ...) {
-  index = match(lambda[[1]], x$lambda)
-  beta = op$coefficients[index,]
+summary.iolm.ridge = function (object, lambda=object$lambda[which.min(object$AIC)], ...) {
+  index = match(lambda[[1]], object$lambda)
+  beta = object$coefficients[index,]
   p = length(beta)
   if (is.na(index))
     stop(sprintf("Cannot find lambda=%f",lambda[[1]]))
 
   lambda = rep(lambda, p)
-  if (x$intercept) lambda[1] = 0
-  W = x$iolm$xtx + Matrix::Diagonal(p,lambda)
+  if (object$intercept) lambda[1] = 0
+  W = object$iolm$xtx + Matrix::Diagonal(p,lambda)
 
-  se = sqrt(Matrix::diag( Matrix::solve(W,op$iolm$xtx) %*% Matrix::solve(W) * x$sigma^2) / x$iolm$n)
+  se = sqrt(Matrix::diag( Matrix::solve(W,object$iolm$xtx) %*% Matrix::solve(W) * object$sigma^2) / object$iolm$n)
   bias = -1 * lambda * Matrix::solve(W, beta)
 
   ans = cbind(beta, as.numeric(se), as.numeric(bias))
-  rownames(ans) = colnames(op$coefficients)
+  rownames(ans) = colnames(object$coefficients)
   colnames(ans) = c("Estimate", "Bias", "Std. Error")
   ans
 }

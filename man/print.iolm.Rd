@@ -4,12 +4,14 @@
 \alias{print.iolm}
 \title{Print iolm object}
 \usage{
-print.iolm(x, digits = max(3L, getOption("digits") - 3L), ...)
+\method{print}{iolm}(x, digits = max(3L, getOption("digits") - 3L), ...)
 }
 \arguments{
 \item{x}{output of iolm}
 
 \item{digits}{significant digits to print}
+
+\item{...}{optional, currently unused, arguments}
 }
 \description{
 Print iolm object

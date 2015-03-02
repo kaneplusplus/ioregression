@@ -18,6 +18,10 @@ lars_par(XtX, XtY, YtY, n, mean_x, mean_y, type = c("lasso", "lar",
 
 \item{n}{number of data points in the original X matrix}
 
+\item{mean_x}{vector of means for each column of the X matrix}
+
+\item{mean_y}{mean of the response vector Y}
+
 \item{type}{One of "lasso", "lar", "forward.stagewise" or "stepwise". The
 names can be abbreviated to any unique substring. Default is
 "lasso".}

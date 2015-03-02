@@ -4,10 +4,12 @@
 \alias{summary.iolm}
 \title{Get the regression diagnostics for a linear regression}
 \usage{
-summary.iolm(object, TEST, ...)
+\method{summary}{iolm}(object, ...)
 }
 \arguments{
 \item{object}{an object return from iolm}
+
+\item{...}{optional, currently unused, arguments}
 }
 \description{
 Get the regression diagnostics for a linear regression

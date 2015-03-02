@@ -2,13 +2,31 @@
 % Please edit documentation in R/adf.r
 \name{lm.model.frame}
 \alias{lm.model.frame}
-\title{A custom version of lm to construct a model frame that
-does not drop unused levels (because these should be)
-in other chunks.}
+\title{Construct model.frame}
 \usage{
-lm.model.frame(formula, data, subset, weights, na.action, method = "qr",
-  model = TRUE, x = FALSE, y = FALSE, qr = TRUE, singular.ok = TRUE,
-  contrasts = NULL, offset, ...)
+lm.model.frame(formula, data, subset, weights, na.action, contrasts = NULL,
+  offset)
+}
+\arguments{
+\item{formula}{a formula to use with type equal to model or sparse.model}
+
+\item{data}{a data.frame object}
+
+\item{subset}{a string to to use with type equal to model or sparse.model.
+Will be evaluated in the environment of the data frame
+(ex. subset="V2 + V3 > V4")}
+
+\item{weights}{a string to to use with type equal to model or sparse.model.
+Will be evaluated in the environment of the data frame.}
+
+\item{na.action}{a function which indicates what should happen when the data
+contain 'NA's. See lm.fit for more details.}
+
+\item{contrasts}{contrasts to use with type equal to model or sparse.model}
+
+\item{offset}{an optional offset}
+
+\item{model}{an optional subset vector}
 }
 \description{
 A custom version of lm to construct a model frame that

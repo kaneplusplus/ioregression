@@ -1,5 +1,6 @@
 #' Create an abstract data frame
 #'
+#' @importFrom           iotools mstrsplit dstrsplit chunk.reader chunk.apply
 #' @param description    character string.  A description of the connection; the
 #                          path to a file for file connections.
 #' @param conMethod      string indicating the connection method.
@@ -103,7 +104,7 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
   if (!missing(chunkFormatter)) {
     output$chunkFormatter = chunkFormatter
   } else {
-    output$chunkFormatter = .default.chunkFormatter(sep=sep, nsep=nsep, strict=strict)
+    output$chunkFormatter = default.chunkFormatter(sep=sep, nsep=nsep, strict=strict)
   }
 
   class(output) = c("adf")
@@ -116,7 +117,7 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
 #' @param nsep    character seperating the column of rownames. Set to
 #'                  NA to generate automatic rownames.
 #' @param strict  logical. Whether the parser should run in strict mode.
-.default.chunkFormatter = function(sep=sep, nsep=nsep, strict=strict) {
+default.chunkFormatter = function(sep=sep, nsep=nsep, strict=strict) {
   function(data, colNames, colClasses, levels) {
     col_types = colClasses
     names(col_types) = colNames
@@ -170,7 +171,7 @@ as.adf = function(x, ...) {
     charToRaw(paste(iotools::as.output.data.frame(x),collapse="\n"))
   output$skip = 0L
   output$chunkProcessor = identity
-  output$chunkFormatter = .default.chunkFormatter("|", NA, TRUE)
+  output$chunkFormatter = default.chunkFormatter("|", NA, TRUE)
   output$colNames = names(x)
   output$colClasses = sapply(x, class)
   output$levels = lapply(x, levels)
@@ -275,16 +276,28 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
   return(output)
 }
 
+#' Construct model.frame
+#'
 #' A custom version of lm to construct a model frame that
 #' does not drop unused levels (because these should be)
 #' in other chunks.
+#'
+#' @param formula          a formula to use with type equal to model or sparse.model
+#' @param data             a data.frame object
+#' @param subset           a string to to use with type equal to model or sparse.model.
+#'                         Will be evaluated in the environment of the data frame
+#'                         (ex. subset="V2 + V3 > V4")
+#' @param weights          a string to to use with type equal to model or sparse.model.
+#'                         Will be evaluated in the environment of the data frame.
+#' @param na.action        a function which indicates what should happen when the data
+#'                         contain 'NA's. See lm.fit for more details.
+#' @param model            an optional subset vector
+#' @param contrasts        contrasts to use with type equal to model or sparse.model
+#' @param offset           an optional offset
 lm.model.frame =
-function (formula, data, subset, weights, na.action, method = "qr",
-    model = TRUE, x = FALSE, y = FALSE, qr = TRUE, singular.ok = TRUE,
-    contrasts = NULL, offset, ...)
+function (formula, data, subset, weights, na.action,
+    contrasts = NULL, offset)
 {
-  ret.x <- x
-  ret.y <- y
   cl <- match.call()
   mf <- match.call(expand.dots = FALSE)
   m <- match(c("formula", "data", "subset", "weights", "na.action",
@@ -298,6 +311,7 @@ function (formula, data, subset, weights, na.action, method = "qr",
 
 #' Print the details of an abstract data frame
 #'
+#' @method print adf
 #' @param x    a data.frame
 #' @param ...  other arguments. Currently unused
 #'

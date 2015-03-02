@@ -6,6 +6,7 @@
 #' function can run without needing to make an additional
 #' pass over the data.
 #'
+#' @importFrom       lars updateR nnls.lars delcol
 #' @param object     an iolm object with the desired formula
 #' @param type       One of "lasso", "lar", "forward.stagewise" or "stepwise". The
 #'                   names can be abbreviated to any unique substring. Default is
@@ -28,22 +29,22 @@ iolars = function(object, type = c("lasso", "lar", "forward.stagewise","stepwise
     stop("input to object must be an iolm object! See ?ioregression::iolm for more info.")
 
   out.type = match.arg(out.type)
-  if (attr(out$terms, "intercept")) {
+  if (attr(object$terms, "intercept")) {
     XtX = as.matrix(object$xtx)[-1,-1]
     XtY = as.matrix(object$xty)[-1]
     mean_x = as.numeric(object$mean_x)[-1]
-    noms = names(out$coefficients)[-1]
+    noms = names(object$coefficients)[-1]
     if (missing(intercept)) intercept = TRUE
   } else {
     XtX = as.matrix(object$xtx)
     XtY = as.matrix(object$xty)
     mean_x = as.numeric(object$mean_x)
-    noms = names(out$coefficients)
+    noms = names(object$coefficients)
     if (missing(intercept)) intercept = FALSE
   }
 
   obj = lars_par(XtX, XtY, as.numeric(object$yty),
-                  n = object$n, mean_x=mean_x, mean_y=out$sum_y / out$n,
+                  n = object$n, mean_x=mean_x, mean_y=object$sum_y / object$n,
                   type = type, normalize=normalize,
                   intercept=intercept, eps = eps, max.steps = max.steps)
   obj$call = match.call()
@@ -76,6 +77,7 @@ coef.iolars = function (object, ...) object$beta
 
 #' Print an iolars object
 #'
+#' @method print iolars
 #' @param x   an iolars object to print the summary of
 #' @param ... other inputs; currently unused
 #' @export
@@ -88,6 +90,8 @@ print.iolars = function (x, ...) print(x$info)
 #' @param XtY        precomputed XtY vector
 #' @param YtY        precomputed YtY value
 #' @param n          number of data points in the original X matrix
+#' @param mean_x     vector of means for each column of the X matrix
+#' @param mean_y     mean of the response vector Y
 #' @param type       One of "lasso", "lar", "forward.stagewise" or "stepwise". The
 #'                   names can be abbreviated to any unique substring. Default is
 #'                   "lasso".
@@ -204,11 +208,11 @@ function(XtX, XtY, YtY, n, mean_x, mean_y,
 ### We keep the choleski R  of X[,active] (in the order they enter)
         for(inew in new) {
           if(use.Gram) {
-            R <- updateR(Gram[inew, inew], R, drop(Gram[
+            R <- lars::updateR(Gram[inew, inew], R, drop(Gram[
                                                         inew, active]), Gram = TRUE,eps=eps)
           }
           else {
-            R <- updateR(x[, inew], R, x[, active], Gram
+            R <- lars::updateR(x[, inew], R, x[, active], Gram
                          = FALSE,eps=eps)
           }
           if(attr(R, "rank") == length(active)) {
@@ -243,12 +247,12 @@ function(XtX, XtY, YtY, n, mean_x, mean_y,
         directions <- Gi1 * Sign
         if(!all(directions > 0)) {
           if(use.Gram) {
-            nnls.object <- nnls.lars(active, Sign, R,
+            nnls.object <- lars::nnls.lars(active, Sign, R,
                                      directions, Gram[active, active], trace =
                                      trace, use.Gram = TRUE,eps=eps)
           }
           else {
-            nnls.object <- nnls.lars(active, Sign, R,
+            nnls.object <- lars::nnls.lars(active, Sign, R,
                                      directions, x[, active], trace = trace,
                                      use.Gram = FALSE,eps=eps)
           }
@@ -316,7 +320,7 @@ function(XtX, XtY, YtY, n, mean_x, mean_y,
           if ((p <- dim(R)[1]) == 1)
            R = NULL
           else
-            R <- delcol(R, rep(1, p), id)[[1]][-p, , drop = FALSE]
+            R <- lars::delcol(R, rep(1, p), id)[[1]][-p, , drop = FALSE]
           attr(R, "rank") = p - 1
         }
         dropid <- active[drops] # indices from 1:m
@@ -361,34 +365,4 @@ function(XtX, XtY, YtY, n, mean_x, mean_y,
                  beta = beta, mu = mu, normx = normx, meanx = mean_x)
   class(object) <- "lars"
   object
-}
-
-
-#' Helper function for lars_par
-updateR <- function (xnew, R = NULL, xold, eps = .Machine$double.eps, Gram = FALSE)
-{
-    xtx <- if (Gram)
-        xnew
-    else sum(xnew^2)
-    norm.xnew <- sqrt(xtx)
-    if (is.null(R)) {
-        R <- matrix(norm.xnew, 1, 1)
-        attr(R, "rank") <- 1
-        return(R)
-    }
-    Xtx <- if (Gram)
-        xold
-    else drop(t(xnew) %*% xold)
-    r <- backsolve(R, Xtx, ncol(R), transpose = TRUE)
-    rpp <- norm.xnew^2 - sum(r^2)
-    rank <- attr(R, "rank")
-    if (rpp <= eps)
-        rpp <- eps
-    else {
-        rpp <- sqrt(rpp)
-        rank <- rank + 1
-    }
-    R <- cbind(rbind(R, 0), c(r, rpp))
-    attr(R, "rank") <- rank
-    R
 }

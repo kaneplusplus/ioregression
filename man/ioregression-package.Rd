@@ -32,5 +32,5 @@ Taylor Arnold, Michael J. Kane, Simon Urbanek
 Maintainer: Michael J. Kane <kaneplusplus@gmail.com>
 }
 \examples{
-iolm(Sepal.Width ~ Sepal.Length + species, data=iris)
+runif(10)
 }

@@ -4,10 +4,13 @@
 \alias{summary.iolm.ridge}
 \title{Summarize a ridge regression for a particular value of lambda}
 \usage{
-summary.iolm.ridge(x, lambda = x$lambda[which.min(x$AIC)], ...)
+\method{summary}{iolm.ridge}(object,
+  lambda = object$lambda[which.min(object$AIC)], ...)
 }
 \arguments{
-\item{x}{an iolars object to print the summary of}
+\item{object}{an iolars object to print the summary of}
+
+\item{lambda}{a single lambda value}
 
 \item{...}{other inputs; currently unused}
 }

@@ -4,7 +4,7 @@
 \alias{print.iolars}
 \title{Print an iolars object}
 \usage{
-print.iolars(x, ...)
+\method{print}{iolars}(x, ...)
 }
 \arguments{
 \item{x}{an iolars object to print the summary of}

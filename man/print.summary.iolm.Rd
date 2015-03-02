@@ -4,7 +4,7 @@
 \alias{print.summary.iolm}
 \title{Print iolm summary}
 \usage{
-print.summary.iolm(x, digits = max(3L, getOption("digits") - 3L),
+\method{print}{summary.iolm}(x, digits = max(3L, getOption("digits") - 3L),
   symbolic.cor = x$symbolic.cor,
   signif.stars = getOption("show.signif.stars"), ...)
 }
@@ -16,6 +16,8 @@ print.summary.iolm(x, digits = max(3L, getOption("digits") - 3L),
 \item{symbolic.cor}{logical. Should symbolic correlation be printed.}
 
 \item{signif.stars}{logical. Should significant starts be printed.}
+
+\item{...}{optional, currently unused, arguments}
 }
 \description{
 Print iolm summary

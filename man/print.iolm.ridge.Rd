@@ -4,7 +4,7 @@
 \alias{print.iolm.ridge}
 \title{Print an ioridge object}
 \usage{
-print.iolm.ridge(x, ...)
+\method{print}{iolm.ridge}(x, ...)
 }
 \arguments{
 \item{x}{an iolars object to print the summary of}

@@ -109,9 +109,11 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
 
 #' Get the regression diagnostics for a linear regression
 #'
-#' @param object an object return from iolm
+#' @method summary iolm
+#' @param object   an object return from iolm
+#' @param ...      optional, currently unused, arguments
 #' @export
-summary.iolm = function(object, TEST, ...) {
+summary.iolm = function(object, ...) {
   call = match.call()
 
   beta = coef(object)
@@ -156,8 +158,10 @@ summary.iolm = function(object, TEST, ...) {
 
 #' Print iolm object
 #'
+#' @method print iolm
 #' @param x        output of iolm
 #' @param digits   significant digits to print
+#' @param ...      optional, currently unused, arguments
 #' @export
 print.iolm =
 function (x, digits = max(3L, getOption("digits") - 3L), ...)
@@ -176,10 +180,12 @@ function (x, digits = max(3L, getOption("digits") - 3L), ...)
 
 #' Print iolm summary
 #'
+#' @method print summary.iolm
 #' @param x             output of summary.iolm
 #' @param digits        significant digits to print
 #' @param symbolic.cor  logical. Should symbolic correlation be printed.
 #' @param signif.stars  logical. Should significant starts be printed.
+#' @param ...           optional, currently unused, arguments
 #' @export
 print.summary.iolm =
 function (x, digits = max(3L, getOption("digits") - 3L), symbolic.cor = x$symbolic.cor,

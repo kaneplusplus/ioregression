@@ -54,7 +54,7 @@ dfpp_gen = function(col_types, col_names=NULL, sep=",",
 
 #' Perform a generalized linear regression
 #'
-#' @param form an object of class ‘"formula"’ (or one that can be coerced to that class): a symbolic description of the model to be fitted.
+#' @param form an object of class \code{formula} (or one that can be coerced to that class): a symbolic description of the model to be fitted.
 #' @param family a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function or the result of a call to a family function.
 #' @param data a connection to read data from
 #' @param dfpp the data frame preprocessor. a function that turns the
@@ -64,9 +64,10 @@ dfpp_gen = function(col_types, col_names=NULL, sep=",",
 #' @param method the method to be used in fitting the model.  The default is
 #' iteratively reweighted least squares (irls). Support for stochastic gradient
 #' decent is coming.
-#' @param contrasts an optional list. See the ‘contrasts.arg’ of ‘model.matrix.default’.
+#' @param contrasts an optional list. See the 'contrasts.arg' of 'model.matrix.default'.
 #' @param sep if using a connection or file, which character is used as a separator between elements?
 #' @param parallel how many logical processor cores to use (default 1)
+#' @param ... other options; currently unused
 #' @export
 ioglm = function(form, family = gaussian(), data, dfpp,
                  beta_start=NULL, control=list(maxit=25, epsilon=1e-08,
@@ -185,9 +186,11 @@ ioglm = function(form, family = gaussian(), data, dfpp,
 
 #' Get the regression diagnostics for a linear regression
 #'
-#' @param object an object return from ioglm
-#' @param data a data.frame or connection to the data set where training was performed.
+#' @method summary ioglm
+#' @param object   an object return from ioglm
+#' @param data     a data.frame or connection to the data set where training was performed.
 #' @param parallel how many logical processor cores to use (default 1)
+#' @param ...      optional, currently unused, arguments
 #' @export
 summary.ioglm = function(object, data, parallel=1, ...) {
   call = object$call
