@@ -5,7 +5,8 @@
 \title{This is a modified version of the lars function from the lars package,
 which allows for pre-computing XtY.}
 \usage{
-lars_par(XtX, XtY, type = c("lasso", "lar", "forward.stagewise", "stepwise"),
+lars_par(XtX, XtY, YtY, n, mean_x, mean_y, type = c("lasso", "lar",
+  "forward.stagewise", "stepwise"), normalize = TRUE, intercept = FALSE,
   eps = .Machine$double.eps, max.steps = NULL)
 }
 \arguments{
@@ -13,13 +14,24 @@ lars_par(XtX, XtY, type = c("lasso", "lar", "forward.stagewise", "stepwise"),
 
 \item{XtY}{precomputed XtY vector}
 
+\item{YtY}{precomputed YtY value}
+
+\item{n}{number of data points in the original X matrix}
+
 \item{type}{One of "lasso", "lar", "forward.stagewise" or "stepwise". The
 names can be abbreviated to any unique substring. Default is
 "lasso".}
 
+\item{normalize}{If TRUE, each variable is standardized to have unit L2 norm,
+otherwise it is left alone. Default is TRUE.}
+
+\item{intercept}{if TRUE, an intercept is included in the model (and not
+penalized), otherwise no intercept is included. Default is
+TRUE.}
+
 \item{eps}{An effective zero}
 
-\item{max.steps}{Limit the number of steps taken;}
+\item{max.steps}{Limit the number of steps taken}
 }
 \description{
 This is a modified version of the lars function from the lars package,

@@ -4,7 +4,7 @@
 \alias{print.summary.iolm}
 \title{Print iolm summary}
 \usage{
-\method{print}{summary.iolm}(x, digits = max(3L, getOption("digits") - 3L),
+print.summary.iolm(x, digits = max(3L, getOption("digits") - 3L),
   symbolic.cor = x$symbolic.cor,
   signif.stars = getOption("show.signif.stars"), ...)
 }

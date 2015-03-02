@@ -4,7 +4,7 @@
 \alias{print.adf}
 \title{Print the details of an abstract data frame}
 \usage{
-\method{print}{adf}(x, ...)
+print.adf(x, ...)
 }
 \arguments{
 \item{x}{a data.frame}

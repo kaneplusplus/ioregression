@@ -4,32 +4,37 @@
 \alias{iolars}
 \title{Perform a lasso or stepwise regression}
 \usage{
-iolars(formula, data, data_frame_preprocessor = function(x) x,
-  type = c("lasso", "lar", "forward.stagewise", "stepwise"),
-  contrasts = NULL, sep = ",", eps = .Machine$double.eps,
-  max.steps = NULL)
+iolars(object, type = c("lasso", "lar", "forward.stagewise", "stepwise"),
+  normalize = TRUE, intercept, eps = .Machine$double.eps,
+  max.steps = NULL, out.type = c("iolars", "lars"))
 }
 \arguments{
-\item{formula}{the formual for the regression}
-
-\item{data}{a connection to read data from}
-
-\item{data_frame_preprocessor}{a function that turns the data read from
-a connection into a properly formatted data frame}
+\item{object}{an iolm object with the desired formula}
 
 \item{type}{One of "lasso", "lar", "forward.stagewise" or "stepwise". The
- names can be abbreviated to any unique substring. Default is
+names can be abbreviated to any unique substring. Default is
 "lasso".}
 
-\item{contrasts}{the contrasts for categorical regressors}
+\item{normalize}{If TRUE, each variable is standardized to have unit L2 norm,
+otherwise it is left alone. Default is TRUE.}
 
-\item{sep}{if using a connection or file, which character is used as a separator between elements?}
+\item{intercept}{if TRUE, an intercept is included in the model (and not
+penalized), otherwise no intercept is included. If missing,
+will be infered from the formular in \code{object}.}
 
 \item{eps}{An effective zero}
 
 \item{max.steps}{Limit the number of steps taken}
+
+\item{out.type}{The desired class of the output. Either "iolars" or "lars".
+The latter requires installing the lars package in order to
+print, predict, ect.}
 }
 \description{
-Perform a lasso or stepwise regression
+This function takes a pre-computed iolm object,
+and applies the Least Angle Regression (LARs)
+algorithm to it. By using the iolm object, this
+function can run without needing to make an additional
+pass over the data.
 }
 

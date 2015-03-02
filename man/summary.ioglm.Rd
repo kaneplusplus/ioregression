@@ -4,7 +4,7 @@
 \alias{summary.ioglm}
 \title{Get the regression diagnostics for a linear regression}
 \usage{
-\method{summary}{ioglm}(object, data, parallel = 1, ...)
+summary.ioglm(object, data, parallel = 1, ...)
 }
 \arguments{
 \item{object}{an object return from ioglm}

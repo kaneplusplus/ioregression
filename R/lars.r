@@ -16,22 +16,29 @@
 #'                   penalized), otherwise no intercept is included. If missing,
 #'                   will be infered from the formular in \code{object}.
 #' @param eps        An effective zero
-#' @param max.steps Limit the number of steps taken
+#' @param max.steps  Limit the number of steps taken
+#' @param out.type   The desired class of the output. Either "iolars" or "lars".
+#'                   The latter requires installing the lars package in order to
+#'                   print, predict, ect.
 #' @export
 iolars = function(object, type = c("lasso", "lar", "forward.stagewise","stepwise"),
-                  normalize=TRUE, intercept, eps = .Machine$double.eps, max.steps = NULL) {
+                  normalize=TRUE, intercept, eps = .Machine$double.eps, max.steps = NULL,
+                  out.type = c("iolars", "lars")) {
   if (!inherits(object, "iolm"))
     stop("input to object must be an iolm object! See ?ioregression::iolm for more info.")
 
+  out.type = match.arg(out.type)
   if (attr(out$terms, "intercept")) {
     XtX = as.matrix(object$xtx)[-1,-1]
     XtY = as.matrix(object$xty)[-1]
     mean_x = as.numeric(object$mean_x)[-1]
+    noms = names(out$coefficients)[-1]
     if (missing(intercept)) intercept = TRUE
   } else {
     XtX = as.matrix(object$xtx)
     XtY = as.matrix(object$xty)
     mean_x = as.numeric(object$mean_x)
+    noms = names(out$coefficients)
     if (missing(intercept)) intercept = FALSE
   }
 
@@ -40,9 +47,39 @@ iolars = function(object, type = c("lasso", "lar", "forward.stagewise","stepwise
                   type = type, normalize=normalize,
                   intercept=intercept, eps = eps, max.steps = max.steps)
   obj$call = match.call()
+
+  if (out.type == "lars") return(obj)
+
+  obj$info = cbind(lambda=c(obj$lambda,0), action=c(0L, obj$action),
+                    df=obj$df, RSS=obj$RSS, R2=obj$R2, obj=obj$RSS,
+                    Cp=obj$Cp)
+  rownames(obj$info) = rep("",nrow(obj$info))
+  attr(obj$beta,"scaled:scale") = NULL
+
+  if (intercept) {
+    obj$beta = cbind(obj$mu - obj$beta %*% obj$meanx, obj$beta)
+    colnames(obj$beta) = c("(Intercept)", noms)
+  } else {
+    names(obj$beta) = noms
+  }
+
+  class(obj) = "iolars"
   obj
 }
 
+#' Get coefficients of an iolars object
+#'
+#' @param object  an iolars object to get the coefficients matrix for
+#' @param ...     other inputs; currently unused
+#' @export
+coef.iolars = function (object, ...) object$beta
+
+#' Print an iolars object
+#'
+#' @param x   an iolars object to print the summary of
+#' @param ... other inputs; currently unused
+#' @export
+print.iolars = function (x, ...) print(x$info)
 
 #' This is a modified version of the lars function from the lars package,
 #' which allows for pre-computing XtY.

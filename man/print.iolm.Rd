@@ -4,7 +4,7 @@
 \alias{print.iolm}
 \title{Print iolm object}
 \usage{
-\method{print}{iolm}(x, digits = max(3L, getOption("digits") - 3L), ...)
+print.iolm(x, digits = max(3L, getOption("digits") - 3L), ...)
 }
 \arguments{
 \item{x}{output of iolm}
