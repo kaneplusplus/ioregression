@@ -6,21 +6,20 @@
 #' function can run without needing to make an additional
 #' pass over the data.
 #'
-#' @param object the formual for the regression
-#' @param data a connection to read data from
-#' @param data_frame_preprocessor a function that turns the data read from
-#' a connection into a properly formatted data frame
-#' @param contrasts the contrasts for categorical regressors
-#' @param sep if using a connection or file, which character is used as a separator between elements?
-#' @param type One of "lasso", "lar", "forward.stagewise" or "stepwise". The
-#'          names can be abbreviated to any unique substring. Default is
-#'         "lasso".
-#' @param eps  An effective zero
+#' @param object     an iolm object with the desired formula
+#' @param type       One of "lasso", "lar", "forward.stagewise" or "stepwise". The
+#'                   names can be abbreviated to any unique substring. Default is
+#'                   "lasso".
+#' @param normalize  If TRUE, each variable is standardized to have unit L2 norm,
+#'                   otherwise it is left alone. Default is TRUE.
+#' @param intercept  if TRUE, an intercept is included in the model (and not
+#'                   penalized), otherwise no intercept is included. If missing,
+#'                   will be infered from the formular in \code{object}.
+#' @param eps        An effective zero
 #' @param max.steps Limit the number of steps taken
 #' @export
 iolars = function(object, type = c("lasso", "lar", "forward.stagewise","stepwise"),
-                  normalize=TRUE, intercept=TRUE, sep=",", eps = .Machine$double.eps,
-                  max.steps = NULL) {
+                  normalize=TRUE, intercept, eps = .Machine$double.eps, max.steps = NULL) {
   if (!inherits(object, "iolm"))
     stop("input to object must be an iolm object! See ?ioregression::iolm for more info.")
 
@@ -28,10 +27,12 @@ iolars = function(object, type = c("lasso", "lar", "forward.stagewise","stepwise
     XtX = as.matrix(object$xtx)[-1,-1]
     XtY = as.matrix(object$xty)[-1]
     mean_x = as.numeric(object$mean_x)[-1]
+    if (missing(intercept)) intercept = TRUE
   } else {
     XtX = as.matrix(object$xtx)
     XtY = as.matrix(object$xty)
     mean_x = as.numeric(object$mean_x)
+    if (missing(intercept)) intercept = FALSE
   }
 
   obj = lars_par(XtX, XtY, as.numeric(object$yty),
@@ -46,15 +47,20 @@ iolars = function(object, type = c("lasso", "lar", "forward.stagewise","stepwise
 #' This is a modified version of the lars function from the lars package,
 #' which allows for pre-computing XtY.
 #'
-#' @param XtX precomputed XtX matrix
-#' @param XtY precomputed XtY vector
-#' @param YtY precomputed YtY value
-#' @param n   number of data points in the original X matrix
-#' @param type One of "lasso", "lar", "forward.stagewise" or "stepwise". The
-#'          names can be abbreviated to any unique substring. Default is
-#'          "lasso".
-#' @param eps  An effective zero
-#' @param max.steps Limit the number of steps taken;
+#' @param XtX        precomputed XtX matrix
+#' @param XtY        precomputed XtY vector
+#' @param YtY        precomputed YtY value
+#' @param n          number of data points in the original X matrix
+#' @param type       One of "lasso", "lar", "forward.stagewise" or "stepwise". The
+#'                   names can be abbreviated to any unique substring. Default is
+#'                   "lasso".
+#' @param normalize  If TRUE, each variable is standardized to have unit L2 norm,
+#'                   otherwise it is left alone. Default is TRUE.
+#' @param intercept  if TRUE, an intercept is included in the model (and not
+#'                   penalized), otherwise no intercept is included. Default is
+#'                   TRUE.
+#' @param eps        An effective zero
+#' @param max.steps Limit the number of steps taken
 lars_par <-
 function(XtX, XtY, YtY, n, mean_x, mean_y,
           type = c("lasso", "lar", "forward.stagewise","stepwise"),
@@ -78,6 +84,8 @@ function(XtX, XtY, YtY, n, mean_x, mean_y,
 ### Conversion to R April 2003
 ### stepwise and non-standardize options added May 2007
 ### Copyright Brad Efron and Trevor Hastie
+###
+### Edited to use precomputed XtX and XtY by Taylor Arnold 2015
   call <- match.call()
   type <- match.arg(type)
   TYPE <- switch(type,
@@ -159,11 +167,11 @@ function(XtX, XtY, YtY, n, mean_x, mean_y,
 ### We keep the choleski R  of X[,active] (in the order they enter)
         for(inew in new) {
           if(use.Gram) {
-            R <- lars:::updateR(Gram[inew, inew], R, drop(Gram[
+            R <- updateR(Gram[inew, inew], R, drop(Gram[
                                                         inew, active]), Gram = TRUE,eps=eps)
           }
           else {
-            R <- lars:::updateR(x[, inew], R, x[, active], Gram
+            R <- updateR(x[, inew], R, x[, active], Gram
                          = FALSE,eps=eps)
           }
           if(attr(R, "rank") == length(active)) {
@@ -190,7 +198,7 @@ function(XtX, XtY, YtY, n, mean_x, mean_y,
         }
       }
       else action <-  - dropid
-      Gi1 <- backsolve(R, lars:::backsolvet(R, Sign))
+      Gi1 <- backsolve(R, backsolve(R, Sign, ncol(R), transpose = TRUE))
 ### Now we have to do the forward.stagewise dance
 ### This is equivalent to NNLS
       dropouts<-NULL
@@ -268,7 +276,11 @@ function(XtX, XtY, YtY, n, mean_x, mean_y,
           if(trace)
             cat("Lasso Step", k+1, ":\t Variable", active[
                                                         id], "\tdropped\n")
-          R <- lars:::downdateR(R, id)
+          if ((p <- dim(R)[1]) == 1)
+           R = NULL
+          else
+            R <- delcol(R, rep(1, p), id)[[1]][-p, , drop = FALSE]
+          attr(R, "rank") = p - 1
         }
         dropid <- active[drops] # indices from 1:m
         beta[k+1,dropid]<-0  # added to make sure dropped coef is zero
@@ -314,3 +326,32 @@ function(XtX, XtY, YtY, n, mean_x, mean_y,
   object
 }
 
+
+#' Helper function for lars_par
+updateR <- function (xnew, R = NULL, xold, eps = .Machine$double.eps, Gram = FALSE)
+{
+    xtx <- if (Gram)
+        xnew
+    else sum(xnew^2)
+    norm.xnew <- sqrt(xtx)
+    if (is.null(R)) {
+        R <- matrix(norm.xnew, 1, 1)
+        attr(R, "rank") <- 1
+        return(R)
+    }
+    Xtx <- if (Gram)
+        xold
+    else drop(t(xnew) %*% xold)
+    r <- backsolve(R, Xtx, ncol(R), transpose = TRUE)
+    rpp <- norm.xnew^2 - sum(r^2)
+    rank <- attr(R, "rank")
+    if (rpp <= eps)
+        rpp <- eps
+    else {
+        rpp <- sqrt(rpp)
+        rank <- rank + 1
+    }
+    R <- cbind(rbind(R, 0), c(r, rpp))
+    attr(R, "rank") <- rank
+    R
+}
