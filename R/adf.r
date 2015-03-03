@@ -212,7 +212,7 @@ as.adf = function(x, ...) {
 #' @export
 adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
                       formula, contrasts=NULL, subset=NULL, weights=NULL,
-                      na.action=NULL, offset=NULL, ..., chunk.max.line=65536L,
+                      na.action=NULL, offset=NULL, passedVars=NULL, ..., chunk.max.line=65536L,
                       CH.MAX.SIZE=33554432L, CH.MERGE = list, parallel=1L) {
   if (!inherits(x, "adf")) stop("x must be an 'adf' object!")
 
@@ -230,7 +230,8 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
   type = match.arg(type)
   switch(type,
     data.frame={
-      FUN2 = function(z) FUN(x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses, x$levels)))
+      FUN2 = function(z) FUN(x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses, x$levels)),
+                             passedVars)
     },
     model={
       FUN2 = function(z) {
@@ -248,7 +249,7 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
         return(FUN(list(y=model.response(mf, "numeric"),
                         x=model.matrix(mt, mf, contrasts.arg=contrasts),
                         w=as.vector(model.weights(mf)),
-                        offset=as.vector(model.offset(mf)))))
+                        offset=as.vector(model.offset(mf)))), passedVars)
       }
     },
     sparse.model={
@@ -267,7 +268,7 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
         return(FUN(list(y=model.response(mf, "numeric"),
                         x=Matrix::sparse.model.matrix(mt, mf, contrasts.arg=contrasts),
                         w=as.vector(model.weights(mf)),
-                        offset=as.vector(model.offset(mf)))))
+                        offset=as.vector(model.offset(mf))),passedVars))
       }
     })
   output = chunk.apply(cr, FUN2, CH.MERGE = CH.MERGE, CH.MAX.SIZE = CH.MAX.SIZE, parallel=parallel)

@@ -22,9 +22,9 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
   if (!inherits(data, "adf")) data = as.adf(data)
 
   cvs = adf.apply(x=data, type="sparse.model",
-          FUN=function(d) {
+          FUN=function(d,passedVars) {
             if (nrow(d$x) == 0L) return(NULL)
-            if (!is.null(offset)) d$y = d$y - d$offset
+            if (!is.null(d$offset)) d$y = d$y - d$offset
             if (!is.null(d$w)) {
               if (any(d$w == 0)) {
                 ok = d$w != 0
@@ -47,7 +47,8 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
                         n = nrow(d$x),
                         sum_y = sum_y,
                         sum_w = sum_w,
-                        mean_x = apply(d$x,2,sum)))
+                        mean_x = apply(d$x,2,sum),
+                        contrasts=attr(d$x, "contrasts")))
 
           },formula=formula,subset=subset,weights=weights,
             na.action=na.action, offset=offset, contrasts=contrasts)

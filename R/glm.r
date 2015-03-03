@@ -1,147 +1,83 @@
-
-glm_kernel = function(y, mm, family, beta, deviance,
-                      cumulative_weight, wtdmu) {
-  nobs = length(y)
-  weights = rep(1, nobs)
-  if (is.null(beta)) {
-    # It's the first iteration.
-    etastart = start = mustart = NULL
-    eval(family$initialize)
-    eta = family$linkfun(mustart)
-  } else {
-    eta = mm %*% beta
-  }
-  g = family$linkinv(eta)
-  gprime = family$mu.eta(eta)
-  residuals = (y-g)/gprime
-  z = eta + residuals
-  W = as.vector(gprime^2 / family$variance(g))
-  aic = NULL
-  if (!is.null(deviance) && !is.null(cumulative_weight)) {
-    aic = family$aic(y, cumulative_weight, g, weights, deviance)
-  }
-  null_dev = NULL
-  if (!is.null(cumulative_weight) && !is.null(wtdmu)) {
-    null_dev = sum(family$dev.resids(y, wtdmu, weights))
-  }
-  RSS = sum(W*residuals^2)
-  deviance = sum(family$dev.resids(y, g, weights))
-  list(XTWX=crossprod(mm, W * mm), XTWz=crossprod(mm, W*z),
-       deviance=deviance, null_dev=null_dev, cumulative_weight=nobs,
-       aic=aic, RSS=RSS, contrasts=attr(mm, "contrasts"),
-       wy=crossprod(weights, y))
-}
-
-#' Data frame preprocessor
-#'
-#' @param col_types the column types of the data
-#' @param col_names the column names of the data
-#' @param sep the column separator
-#' @param dfpp_fun the data.frame preprocessing function
-#' @export
-dfpp_gen = function(col_types, col_names=NULL, sep=",",
-                    dfpp_fun=function(x) x) {
-  col_names = col_names
-  col_types = col_types
-  sep = sep
-  dfpp_fun = dfpp_fun
-  function(x) {
-    x = dstrsplit(x, col_types=col_types, sep)
-    colnames(x) = col_names
-    dfpp_fun(x)
-  }
-}
-
 #' Perform a generalized linear regression
 #'
-#' @param form an object of class \code{formula} (or one that can be coerced to that class): a symbolic description of the model to be fitted.
-#' @param family a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function or the result of a call to a family function.
-#' @param data a connection to read data from
-#' @param dfpp the data frame preprocessor. a function that turns the
-#' read data from a chunk into a properly formatted data frame
-#' @param beta_start starting values for the linear predictor.
-#' @param control a list of parameters for controlling the fitting process.
-#' @param method the method to be used in fitting the model.  The default is
-#' iteratively reweighted least squares (irls). Support for stochastic gradient
-#' decent is coming.
-#' @param contrasts an optional list. See the 'contrasts.arg' of 'model.matrix.default'.
-#' @param sep if using a connection or file, which character is used as a separator between elements?
-#' @param parallel how many logical processor cores to use (default 1)
-#' @param ... other options; currently unused
+#' @param formula     the formula for the regression
+#' @param family      a description of the error distribution and link function to
+#'                     be used in the model. This can be a character string naming a
+#'                     family function, a family function or the result of a call to
+#'                     a family function.
+#' @param data        an abstract data frame, or something which can be
+#'                     coerced to one.
+#' @param weights     a optional character string, which will be evaluated in the
+#'                     frame of the data, giving the sample weights for the regression
+#' @param subset      an options character string, which will be evaluated in the
+#'                     frame of the data, to indicate which rows to include
+#'                     in the analysis
+#' @param na.action   a function which indicates what should happen when the data
+#'                     contain 'NA's. See lm.fit for more details.
+#' @param start       starting values for the parameters in the linear predictor.
+#' @param etastart    starting values for the linear predictor.
+#' @param mustart     starting values for the vector of means.
+#' @param offset      a optional character string, which will be evaluated in the
+#'                     frame of the data, giving the offsets for the regression
+#' @param control     a list of parameters for controlling the fitting process.
+#' @param contrasts   contrasts to use with the regression. See the \code{contrasts.arg}
+#'                     of \code{model.matrix.default}
+#' @param tol         numeric tolerance. Set to -1 to ignore.
 #' @export
-ioglm = function(form, family = gaussian(), data, dfpp,
-                 beta_start=NULL, control=list(maxit=25, epsilon=1e-08,
-                 trace=FALSE), method = "irls",
-                 contrasts = NULL, sep=",", parallel=1, ...) {
-  call = match.call()
-  ret = NULL
-  beta_old = beta_start
-  cumulative_weight = NULL
-  deviance = NULL
-  wtdmu = NULL
-  if (is.data.frame(data)) {
-    # The data.frame implementation.
-    for (i in 1:control$maxit) {
-      mm = model.matrix(form, data, contrasts)
-      if (control$trace)
-        cat("iteration", i, "\n")
-      glm_m = glm_kernel(data[row.names(mm),all.vars(form)[1]], mm, family,
-                         beta_old, deviance, cumulative_weight, wtdmu)
-      # TODO: Add checking for singularities here.
-      XTWX = glm_m$XTWX
-      XTWz = glm_m$XTWz
-      deviance = glm_m$deviance
-      aic = glm_m$aic
-      RSS = glm_m$RSS
-      null_dev=glm_m$null_dev
-      cumulative_weight = glm_m$cumulative_weight
-      wtdmu = if (attributes(terms(form))$intercept) glm_m$wy/cumulative_weight
-              else family$linkinv(0)
-      contrasts = glm_m$contrasts
-      beta = solve(XTWX, tol=2*.Machine$double.eps) %*% XTWz
-      if (!is.null(beta_old) &&
-          as.vector(sqrt(crossprod(beta-beta_old))) < control$epsilon) break
-      beta_old = beta
-    }
-  } else {
-    # The iotools implementation.
-    for (i in 1:control$maxit) {
-      cvs = chunk.apply(data,
-        function(x) {
-          df = dfpp(x)
-          mm = model.matrix(form, df, contrasts)
-          glm_kernel(df[row.names(mm),all.vars(form)[1]], mm, family, beta_old,
-                     deviance, cumulative_weight, wtdmu)
-      }, CH.MERGE=list, parallel=parallel)
-      XTWX = Reduce(`+`, Map(function(x) x$XTWX, cvs))
-      XTWz = Reduce(`+`, Map(function(x) x$XTWz, cvs))
-      aic = Reduce(`+`, Map(function(x) x$aic, cvs))
-      RSS = Reduce(`+`, Map(function(x) x$RSS, cvs))
-      null_dev = Reduce(`+`, Map(function(x) x$null_dev, cvs))
-      cumulative_weight = Reduce(`+`, Map(function(x) x$cumulative_weight, cvs))
-      wtdmu = if(attributes(terms(form))$intercept) {
-        Reduce(`+`, Map(function(x) x$wy, cvs))/cumulative_weight
-      } else {
-        family$linkinv(0)
-      }
-      contrasts = cvs[[1]]$contrasts
-      deviance = Reduce(`+`, Map(function(x) x$deviance, cvs))
-      null_dev = Reduce(`+`, Map(function(x) x$null_dev, cvs))
-      # TODO: Add checking for singularities here.
-      beta = solve(XTWX, tol=2*.Machine$double.eps) %*% XTWz
-      if (!is.null(beta_old) &&
-          as.vector(sqrt(crossprod(beta-beta_old))) < control$epsilon) break
-      beta_old = beta
-    }
-  }
-  if (as.vector(sqrt(crossprod(beta-beta_old))) < control$epsilon) {
-    converged=TRUE
+ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
+                na.action=NULL, start = NULL, etastart, mustart, offset=NULL,
+                control=list(), contrasts=NULL,
+                tol=-1) {
+  call <- match.call()
+  control <- do.call("glm.control", control)
+  if (is.character(family))
+      family <- get(family, mode = "function", envir = parent.frame())
+  if (is.function(family))
+      family <- family()
+  if (is.null(family$family)) {
+      print(family)
+      stop("'family' not recognized")
   }
 
+  if (!inherits(data, "adf")) data = as.adf(data)
+
+  converged=FALSE
+  beta = beta_old = start
+  wtdmu = deviance =  cumulative_weight = NULL
+  for (i in 1:control$maxit) {
+    pvar = list(beta=beta, cw=cumulative_weight, family=family,
+                deviance=deviance, wtdmu=wtdmu)
+    cvs = adf.apply(x=data, type="sparse.model",
+      FUN=glm_kernel ,passedVars=pvar, formula=formula,subset=subset,weights=weights,
+        na.action=na.action, offset=offset, contrasts=contrasts)
+
+    XTWX = Reduce(`+`, Map(function(x) x$XTWX, cvs))
+    XTWz = Reduce(`+`, Map(function(x) x$XTWz, cvs))
+    deviance = Reduce(`+`, Map(function(x) x$deviance, cvs))
+    cumulative_weight = Reduce(`+`, Map(function(x) x$cumulative_weight, cvs))
+    wtdmu = if(attributes(terms(formula))$intercept) {
+      Reduce(`+`, Map(function(x) x$wy, cvs))/cumulative_weight
+    } else {
+      family$linkinv(0)
+    }
+    contrasts = cvs[[1]]$contrasts
+    # TODO: Add checking for singularities here.
+    beta = Matrix::solve(XTWX, XTWz, tol=2*.Machine$double.eps)
+    if (!is.null(beta_old) && as.vector(sqrt(Matrix::crossprod(beta-beta_old))) < control$epsilon) {
+      converged=TRUE
+      break
+    }
+    beta_old = beta
+  }
+
+  # We only calculate these here, as we only care about the
+  #  converging loop:
+  aic = Reduce(`+`, Map(function(x) x$aic, cvs))
+  RSS = Reduce(`+`, Map(function(x) x$RSS, cvs))
+  null_dev = Reduce(`+`, Map(function(x) x$null_dev, cvs))
   beta_names = row.names(beta)
   beta = as.vector(beta)
   names(beta) = beta_names
-
   rank=nrow(XTWX)
 
   aic_rest = ifelse(
@@ -150,19 +86,17 @@ ioglm = function(form, family = gaussian(), data, dfpp,
 
   # This will have to change when we support weights.
   num_obs = cumulative_weight
-  nulldf = num_obs - attributes(terms(form))$intercept
+  nulldf = num_obs - attributes(terms(formula))$intercept
   resdf = num_obs - rank
 
   var_res = RSS/resdf
   dispersion = if (family$family %in% c("poisson", "binomial")) 1 else var_res
 
-  if (missing(dfpp)) dfpp = NULL
   ret = list(coefficients=beta,
     family=family,
     deviance = deviance,
     aic=aic,
     data=data,
-    dfpp=dfpp,
     rank=rank,
     xtwx=XTWX,
     xtwz=XTWz,
@@ -170,29 +104,81 @@ ioglm = function(form, family = gaussian(), data, dfpp,
     dispersion=dispersion,
     rss=RSS,
     converged=converged,
-    formula=form,
+    formula=formula,
     call=call,
     num_obs=num_obs,
     nulldf=nulldf,
     null_dev=null_dev,
     resdf=resdf,
-    terms=terms.formula(form),
+    terms=terms.formula(formula),
     control=control,
-    method=method,
     contrasts=contrasts)
   class(ret) = c("ioglm", "iolm")
   ret
 }
 
+glm_kernel = function(d, passedVars=pvar) {
+  if (nrow(d$x) == 0L) return(NULL)
+  if (!is.null(d$w)) {
+    if (any(d$w == 0)) {
+      ok = d$w != 0
+      d$w = d$w[ok]
+      d$x = d$x[ok,,drop = FALSE]
+      d$y = d$y[ok]
+      if (!is.null(d$offset)) d$offset = d$offset[ok]
+    }
+    sum_y = sum(d$y * d$w)
+    sum_w = sum(d$w)
+    # d$x = d$x * sqrt(d$w)
+    # d$y = d$y * sqrt(d$w)
+  } else {
+    sum_y = sum(d$y)
+    sum_w = nrow(d$x)
+  }
+  nobs = length(d$y)
+  offset <- if (!is.null(d$offset)) offset else offset = rep.int(0,nobs)
+  weights <- if (!is.null(d$w)) d$w else rep(1, nobs)
+  family = passedVars$family
+
+  if (is.null(passedVars$beta)) {
+    # It's the first iteration.
+    etastart = start = mustart = NULL
+    y = d$y
+    eval(family$initialize)
+    eta = family$linkfun(mustart)
+  } else {
+    eta = as.numeric(d$x %*% passedVars$beta)
+  }
+  g = family$linkinv(eta <- eta + offset)
+  gprime = family$mu.eta(eta)
+  residuals = (d$y-g)/gprime
+  z = eta - offset + residuals
+  W = as.vector(weights * gprime^2 / family$variance(g))
+  aic = NULL
+  null_dev = NULL
+  if (!is.null(passedVars$cw) && !is.null(passedVars$wtdmu)) {
+    null_dev = sum(family$dev.resids(d$y, passedVars$wtdmu, weights))
+  }
+  RSS = sum(W*residuals^2)
+  deviance = sum(family$dev.resids(d$y, g, weights))
+  if (!is.null(passedVars$deviance) && !is.null(passedVars$cw)) {
+    aic = family$aic(d$y, passedVars$cw, g, weights, deviance)
+  }
+
+  list(XTWX=Matrix::crossprod(d$x, W * d$x), XTWz=Matrix::crossprod(d$x, W*z),
+       deviance=deviance, null_dev=null_dev, cumulative_weight=nobs,
+       aic=aic, RSS=RSS, contrasts=attr(d$x, "contrasts"),
+       wy=Matrix::crossprod(sqrt(weights), d$y))
+}
+
 #' Get the regression diagnostics for a linear regression
 #'
 #' @method summary ioglm
-#' @param object   an object return from ioglm
-#' @param data     a data.frame or connection to the data set where training was performed.
-#' @param parallel how many logical processor cores to use (default 1)
-#' @param ...      optional, currently unused, arguments
+#'
+#' @param object    an object return from ioglm
+#' @param ...       optional, currently unused, arguments
 #' @export
-summary.ioglm = function(object, data, parallel=1, ...) {
+summary.ioglm = function(object, ...) {
   call = object$call
   terms = object$terms
   if (missing(data)) {

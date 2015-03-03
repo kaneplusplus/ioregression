@@ -4,35 +4,46 @@
 \alias{ioglm}
 \title{Perform a generalized linear regression}
 \usage{
-ioglm(form, family = gaussian(), data, dfpp, beta_start = NULL,
-  control = list(maxit = 25, epsilon = 1e-08, trace = FALSE),
-  method = "irls", contrasts = NULL, sep = ",", parallel = 1, ...)
+ioglm(formula, family = gaussian, data, weights = NULL, subset = NULL,
+  na.action = NULL, start = NULL, etastart, mustart, offset = NULL,
+  control = list(), contrasts = NULL, tol = -1)
 }
 \arguments{
-\item{form}{an object of class \code{formula} (or one that can be coerced to that class): a symbolic description of the model to be fitted.}
+\item{formula}{the formula for the regression}
 
-\item{family}{a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function or the result of a call to a family function.}
+\item{family}{a description of the error distribution and link function to
+be used in the model. This can be a character string naming a
+family function, a family function or the result of a call to
+a family function.}
 
-\item{data}{a connection to read data from}
+\item{data}{an abstract data frame, or something which can be
+coerced to one.}
 
-\item{dfpp}{the data frame preprocessor. a function that turns the
-read data from a chunk into a properly formatted data frame}
+\item{weights}{a optional character string, which will be evaluated in the
+frame of the data, giving the sample weights for the regression}
 
-\item{beta_start}{starting values for the linear predictor.}
+\item{subset}{an options character string, which will be evaluated in the
+frame of the data, to indicate which rows to include
+in the analysis}
+
+\item{na.action}{a function which indicates what should happen when the data
+contain 'NA's. See lm.fit for more details.}
+
+\item{start}{starting values for the parameters in the linear predictor.}
+
+\item{etastart}{starting values for the linear predictor.}
+
+\item{mustart}{starting values for the vector of means.}
+
+\item{offset}{a optional character string, which will be evaluated in the
+frame of the data, giving the offsets for the regression}
 
 \item{control}{a list of parameters for controlling the fitting process.}
 
-\item{method}{the method to be used in fitting the model.  The default is
-iteratively reweighted least squares (irls). Support for stochastic gradient
-decent is coming.}
+\item{contrasts}{contrasts to use with the regression. See the \code{contrasts.arg}
+of \code{model.matrix.default}}
 
-\item{contrasts}{an optional list. See the 'contrasts.arg' of 'model.matrix.default'.}
-
-\item{sep}{if using a connection or file, which character is used as a separator between elements?}
-
-\item{parallel}{how many logical processor cores to use (default 1)}
-
-\item{...}{other options; currently unused}
+\item{tol}{numeric tolerance. Set to -1 to ignore.}
 }
 \description{
 Perform a generalized linear regression
