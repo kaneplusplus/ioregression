@@ -136,7 +136,7 @@ glm_kernel = function(d, passedVars=pvar) {
     sum_w = nrow(d$x)
   }
   nobs = length(d$y)
-  offset <- if (!is.null(d$offset)) offset else offset = rep.int(0,nobs)
+  offset <- if (!is.null(d$offset)) d$offset else offset = rep.int(0,nobs)
   weights <- if (!is.null(d$w)) d$w else rep(1, nobs)
   family = passedVars$family
 
