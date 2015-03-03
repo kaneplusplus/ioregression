@@ -22,7 +22,7 @@
 #'                   The latter requires installing the lars package in order to
 #'                   print, predict, ect.
 #' @export
-iolars = function(object, type = c("lasso", "lar", "forward.stagewise","stepwise"),
+iolm.lars = function(object, type = c("lasso", "lar", "forward.stagewise","stepwise"),
                   normalize=TRUE, intercept, eps = .Machine$double.eps, max.steps = NULL,
                   out.type = c("iolars", "lars")) {
   if (!inherits(object, "iolm"))
@@ -64,7 +64,7 @@ iolars = function(object, type = c("lasso", "lar", "forward.stagewise","stepwise
     names(obj$beta) = noms
   }
 
-  class(obj) = "iolars"
+  class(obj) = "iolm.lars"
   obj
 }
 
@@ -73,7 +73,7 @@ iolars = function(object, type = c("lasso", "lar", "forward.stagewise","stepwise
 #' @param object  an iolars object to get the coefficients matrix for
 #' @param ...     other inputs; currently unused
 #' @export
-coef.iolars = function (object, ...) object$beta
+coef.iolm.lars = function (object, ...) object$beta
 
 #' Print an iolars object
 #'

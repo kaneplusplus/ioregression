@@ -242,7 +242,6 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
         if (!is.null(weights)) mf$weights = eval(parse(text=paste0("with(df, ", weights ,")")))
         if (!is.null(na.action)) mf$na.action = na.action
         if (!is.null(offset)) mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
-        mf$method = "model.frame"
         mf[[1L]] <- quote(lm.model.frame)
         mf = eval(mf, parent.frame())
         mt = attr(mf, "terms")
@@ -262,7 +261,6 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
         if (!is.null(weights)) mf$weights = eval(parse(text=paste0("with(df, ", weights ,")")))
         if (!is.null(na.action)) mf$na.action = na.action
         if (!is.null(offset)) mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
-        mf$method = "model.frame"
         mf[[1L]] <- quote(lm.model.frame)
         mf = eval(mf, parent.frame())
         mt = attr(mf, "terms")
