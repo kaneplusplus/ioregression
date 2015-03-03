@@ -83,3 +83,31 @@ print.iolm.ridge = function (x, ...) {
   rownames(mat) = rep("",nrow(mat))
   print(mat)
 }
+
+#' Summarize a ridge regression for a particular value of lambda
+#'
+#' @method summary iolm.ridge
+#' @param object   an iolars object to print the summary of
+#' @param lambda   a single lambda value
+#' @param ...      other inputs; currently unused
+#' @export
+summary.iolm.ridge = function (object, lambda=object$lambda[which.min(object$AIC)], ...) {
+  index = match(lambda[[1]], object$lambda)
+  beta = object$coefficients[index,]
+  p = length(beta)
+  if (is.na(index))
+    stop(sprintf("Cannot find lambda=%f",lambda[[1]]))
+
+  lambda = rep(lambda, p)
+  if (object$intercept) lambda[1] = 0
+  W = object$iolm$xtx + Matrix::Diagonal(p,lambda)
+
+  se = sqrt(Matrix::diag( Matrix::solve(W,object$iolm$xtx) %*% Matrix::solve(W) * object$sigma^2) / object$iolm$n)
+  bias = -1 * lambda * Matrix::solve(W, beta)
+
+  ans = cbind(beta, as.numeric(se), as.numeric(bias))
+  rownames(ans) = colnames(object$coefficients)
+  colnames(ans) = c("Estimate", "Bias", "Std. Error")
+  ans
+}
+
