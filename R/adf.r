@@ -146,7 +146,7 @@ allFactorLevels = function(x) {
 
   x$levels = vector(mode="list", length=length(x$colClasses))
   names(x$levels) = x$colNames
-  z = adf.apply(x, FUN = function(d) {
+  z = adf.apply(x, FUN = function(d,passedVars) {
       lapply(d[,index],unique)
     })
   for (j in index) {
@@ -185,7 +185,9 @@ as.adf = function(x, ...) {
 #' Low level function for applying over an abstract data frame
 #'
 #' @param x                an abstract data.frame
-#' @param FUN              function to apply over each chunk
+#' @param FUN              function to apply over each chunk; must accept two
+#'                         inputs: the data.frame (or model list), and the
+#'                         input to passedVars
 #' @param type             type of data to give as an input to FUN. If model
 #'                         or sparse model, this is a list giving the response (y),
 #'                         model matrix (x), weights (w), and offset (offset)
@@ -201,6 +203,7 @@ as.adf = function(x, ...) {
 #'                         contain 'NA's. See lm.fit for more details.
 #' @param offset           a string to to use with type equal to model or sparse.model.
 #'                         Will be evaluated in the environment of the data frame.
+#' @param passedVars       Option list of arguments which is passed to FUN
 #' @param ...              Other arguments to pass.
 #' @param chunk.max.line   integer. Maximum number of lines to parse in a single chunk.
 #' @param CH.MAX.SIZE      integer. Maximum size in bytes of a chunk.

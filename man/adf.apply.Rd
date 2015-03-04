@@ -12,7 +12,9 @@ adf.apply(x, FUN, type = c("data.frame", "model", "sparse.model"), formula,
 \arguments{
 \item{x}{an abstract data.frame}
 
-\item{FUN}{function to apply over each chunk}
+\item{FUN}{function to apply over each chunk; must accept two
+inputs: the data.frame (or model list), and the
+input to passedVars}
 
 \item{type}{type of data to give as an input to FUN. If model
 or sparse model, this is a list giving the response (y),
@@ -35,6 +37,8 @@ contain 'NA's. See lm.fit for more details.}
 
 \item{offset}{a string to to use with type equal to model or sparse.model.
 Will be evaluated in the environment of the data frame.}
+
+\item{passedVars}{Option list of arguments which is passed to FUN}
 
 \item{...}{Other arguments to pass.}
 

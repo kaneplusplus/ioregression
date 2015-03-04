@@ -50,6 +50,7 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
     cvs = adf.apply(x=data, type="sparse.model",
       FUN=glm_kernel ,passedVars=pvar, formula=formula,subset=subset,weights=weights,
         na.action=na.action, offset=offset, contrasts=contrasts)
+    cvs = cvs[!sapply(cvs,is.null)]
 
     XTWX = Reduce(`+`, Map(function(x) x$XTWX, cvs))
     XTWz = Reduce(`+`, Map(function(x) x$XTWz, cvs))
@@ -63,7 +64,7 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
     contrasts = cvs[[1]]$contrasts
     # TODO: Add checking for singularities here.
     beta = Matrix::solve(XTWX, XTWz, tol=2*.Machine$double.eps)
-    if (!is.null(beta_old) && as.vector(sqrt(Matrix::crossprod(beta-beta_old))) < control$epsilon) {
+    if (!is.null(beta_old) && as.vector(Matrix::crossprod(beta-beta_old)) < control$epsilon) {
       converged=TRUE
       break
     }
@@ -74,20 +75,18 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
   #  converging loop:
   aic = Reduce(`+`, Map(function(x) x$aic, cvs))
   RSS = Reduce(`+`, Map(function(x) x$RSS, cvs))
+  nobs = Reduce(`+`, Map(function(x) x$nobs, cvs))
   null_dev = Reduce(`+`, Map(function(x) x$null_dev, cvs))
   beta_names = row.names(beta)
   beta = as.vector(beta)
   names(beta) = beta_names
   rank=nrow(XTWX)
 
-  aic_rest = ifelse(
-    (family$family %in% c("Gamma", "inverse.gaussian", "gaussian")), 2, 0)
-  aic = aic + 2 * nrow(XTWX) + aic_rest
+  aic = aic + 2 * nrow(XTWX)
 
   # This will have to change when we support weights.
-  num_obs = cumulative_weight
-  nulldf = num_obs - attributes(terms(formula))$intercept
-  resdf = num_obs - rank
+  nulldf = nobs - attributes(terms(formula))$intercept
+  resdf = nobs - rank
 
   var_res = RSS/resdf
   dispersion = if (family$family %in% c("poisson", "binomial")) 1 else var_res
@@ -106,10 +105,10 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
     converged=converged,
     formula=formula,
     call=call,
-    num_obs=num_obs,
-    nulldf=nulldf,
-    null_dev=null_dev,
-    resdf=resdf,
+    num_obs=nobs,
+    df.null=nulldf,
+    null.deviance=null_dev,
+    df.residual=resdf,
     terms=terms.formula(formula),
     control=control,
     contrasts=contrasts)
@@ -117,7 +116,7 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
   ret
 }
 
-glm_kernel = function(d, passedVars=pvar) {
+glm_kernel = function(d, passedVars=NULL) {
   if (nrow(d$x) == 0L) return(NULL)
   if (!is.null(d$w)) {
     if (any(d$w == 0)) {
@@ -162,13 +161,25 @@ glm_kernel = function(d, passedVars=pvar) {
   RSS = sum(W*residuals^2)
   deviance = sum(family$dev.resids(d$y, g, weights))
   if (!is.null(passedVars$deviance) && !is.null(passedVars$cw)) {
-    aic = family$aic(d$y, passedVars$cw, g, weights, deviance)
+    aic = family$aic(d$y, length(d$y), g, weights, deviance)
   }
 
   list(XTWX=Matrix::crossprod(d$x, W * d$x), XTWz=Matrix::crossprod(d$x, W*z),
-       deviance=deviance, null_dev=null_dev, cumulative_weight=nobs,
+       deviance=deviance, null_dev=null_dev, cumulative_weight=sum(d$w), nobs=nobs,
        aic=aic, RSS=RSS, contrasts=attr(d$x, "contrasts"),
        wy=Matrix::crossprod(sqrt(weights), d$y))
+}
+
+#' Print ioglm object
+#'
+#' @method print ioglm
+#' @param x        output of iolm
+#' @param ...      optional arguments passed to print.glm
+#' @export
+print.ioglm =
+function (x, ...) {
+  class(x) <- "glm"
+  print(x)
 }
 
 #' Get the regression diagnostics for a linear regression
@@ -181,12 +192,6 @@ glm_kernel = function(d, passedVars=pvar) {
 summary.ioglm = function(object, ...) {
   call = object$call
   terms = object$terms
-  if (missing(data)) {
-    data = object$data
-  }
-  if (missing(parallel)) {
-    parallel = object$parallel
-  }
   dispersion = object$dispersion
   inv_scatter = solve(object$xtwx)
   standard_errors = sqrt(dispersion * diag(inv_scatter))
@@ -210,16 +215,16 @@ summary.ioglm = function(object, ...) {
        deviance=object$deviance,
        aic=object$aic,
        contrasts=object$contrasts,
-       df.residual=object$resdf,
-       null.deviance=object$null_dev,
-       df.null=object$nulldf,
+       df.residual=object$df.residual,
+       null.deviance=object$null.deviance,
+       df.null=object$df.null,
        iter=object$iter,
        deviance.resid=NA,
        coefficients=coefficients,
        aliased=aliased,
        dispersion=object$dispersion,
-       df=c(ncol(object$xtwx), object$resdf, ncol(object$xtwx)),
-       data=data,
+       df=c(ncol(object$xtwx), object$df.residual, ncol(object$xtwx)),
+       data=object$data,
        cov.unscaled=inv_scatter,
        cov.scaled=inv_scatter * dispersion)
   class(ret) = c("summary.glm")

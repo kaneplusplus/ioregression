@@ -2,6 +2,7 @@
 
 S3method(coef,iolm.lars)
 S3method(print,adf)
+S3method(print,ioglm)
 S3method(print,iolars)
 S3method(print,iolm)
 S3method(print,iolm.pcr)

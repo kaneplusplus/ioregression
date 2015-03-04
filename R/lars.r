@@ -61,7 +61,7 @@ iolm.lars = function(object, type = c("lasso", "lar", "forward.stagewise","stepw
     obj$beta = cbind(obj$mu - obj$beta %*% obj$meanx, obj$beta)
     colnames(obj$beta) = c("(Intercept)", noms)
   } else {
-    names(obj$beta) = noms
+    colnames(obj$beta) = noms
   }
 
   class(obj) = "iolm.lars"

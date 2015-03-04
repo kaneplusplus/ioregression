@@ -18,7 +18,7 @@ iolm.ridge = function(object, lambda=seq(0,1,by=0.1), normalize=TRUE) {
   p = ncol(object$xtx)
   mean_y = object$sum_y / n
   mean_x = object$mean_x
-  noms = names(out$coefficients)
+  noms = names(object$coefficients)
   intercept = as.logical(attr(object$terms, "intercept"))
 
 
@@ -64,7 +64,7 @@ iolm.ridge = function(object, lambda=seq(0,1,by=0.1), normalize=TRUE) {
 
   out = list(coefficients=beta, lambda=lambda, intercept=intercept, df=df, RSS=RSS,
               AIC=n*log(RSS)+2*df, BIC=n*log(RSS)+log(n)*df,
-              iolm=out, sigma = sigma, call=match.call())
+              iolm=object, sigma = sigma, call=match.call())
   class(out) = c("iolm.ridge")
   return(out)
 }
