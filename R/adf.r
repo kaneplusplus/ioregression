@@ -168,7 +168,8 @@ as.adf = function(x, ...) {
   output = list()
 
   output$createNewConnection =
-    charToRaw(paste(iotools::as.output.data.frame(x),collapse="\n"))
+    #charToRaw(paste(iotools::as.output.data.frame(x),collapse="\n"))
+    charToRaw(iotools::as.output.data.frame(x))
   output$skip = 0L
   output$chunkProcessor = identity
   output$chunkFormatter = default.chunkFormatter("|", NA, TRUE)
@@ -214,9 +215,10 @@ as.adf = function(x, ...) {
 #' @return an object of class type
 #' @export
 adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
-                      formula, contrasts=NULL, subset=NULL, weights=NULL,
-                      na.action=NULL, offset=NULL, passedVars=NULL, ..., chunk.max.line=65536L,
-                      CH.MAX.SIZE=33554432L, CH.MERGE = list, parallel=1L) {
+                     formula, contrasts=NULL, subset=NULL, weights=NULL,
+                     na.action=NULL, offset=NULL, passedVars=NULL, ..., 
+                     chunk.max.line=65536L, CH.MAX.SIZE=33554432L, 
+                     CH.MERGE = list, parallel=1L) {
   if (!inherits(x, "adf")) stop("x must be an 'adf' object!")
 
   on.exit(close(con))
@@ -233,19 +235,30 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
   type = match.arg(type)
   switch(type,
     data.frame={
-      FUN2 = function(z) FUN(x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses, x$levels)),
-                             passedVars)
+      FUN2 = function(z) {
+        FUN(x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses, 
+                                              x$levels)), passedVars)
+      }
     },
     model={
       FUN2 = function(z) {
-        df = x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses, x$levels))
+        df = x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses, 
+                                               x$levels))
         mf = match.call(expand.dots = FALSE)[1L]
         mf$formula = formula
         mf$data = df
-        if (!is.null(subset)) mf$subset = eval(parse(text=paste0("with(df, ", subset ,")")))
-        if (!is.null(weights)) mf$weights = eval(parse(text=paste0("with(df, ", weights ,")")))
-        if (!is.null(na.action)) mf$na.action = na.action
-        if (!is.null(offset)) mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
+        if (!is.null(subset)) {
+          mf$subset = eval(parse(text=paste0("with(df, ", subset ,")")))
+        }
+        if (!is.null(weights)) {
+          mf$weights = eval(parse(text=paste0("with(df, ", weights ,")")))
+        }
+        if (!is.null(na.action)) {
+          mf$na.action = na.action
+        }
+        if (!is.null(offset)) {
+          mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
+        }
         mf[[1L]] <- quote(lm.model.frame)
         mf = eval(mf, parent.frame())
         mt = attr(mf, "terms")
@@ -257,24 +270,35 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
     },
     sparse.model={
       FUN2 = function(z) {
-        df = x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses, x$levels))
+        df = x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses, 
+                              x$levels))
         mf = match.call(expand.dots = FALSE)[1L]
         mf$formula = formula
         mf$data = df
-        if (!is.null(subset)) mf$subset = eval(parse(text=paste0("with(df, ", subset ,")")))
-        if (!is.null(weights)) mf$weights = eval(parse(text=paste0("with(df, ", weights ,")")))
-        if (!is.null(na.action)) mf$na.action = na.action
-        if (!is.null(offset)) mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
+        if (!is.null(subset)) {
+          mf$subset = eval(parse(text=paste0("with(df, ", subset ,")")))
+        }
+        if (!is.null(weights)) {
+          mf$weights = eval(parse(text=paste0("with(df, ", weights ,")")))
+        }
+        if (!is.null(na.action)) {
+          mf$na.action = na.action
+        }
+        if (!is.null(offset)) {
+          mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
+        }
         mf[[1L]] <- quote(lm.model.frame)
         mf = eval(mf, parent.frame())
         mt = attr(mf, "terms")
         return(FUN(list(y=model.response(mf, "numeric"),
-                        x=Matrix::sparse.model.matrix(mt, mf, contrasts.arg=contrasts),
+                        x=Matrix::sparse.model.matrix(mt, mf, 
+                                                      contrasts.arg=contrasts),
                         w=as.vector(model.weights(mf)),
                         offset=as.vector(model.offset(mf))),passedVars))
       }
     })
-  output = chunk.apply(cr, FUN2, CH.MERGE = CH.MERGE, CH.MAX.SIZE = CH.MAX.SIZE, parallel=parallel)
+  output = chunk.apply(cr, FUN2, CH.MERGE = CH.MERGE, CH.MAX.SIZE = CH.MAX.SIZE,
+                       parallel=parallel)
   return(output)
 }
 
