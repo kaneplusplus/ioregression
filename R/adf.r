@@ -168,8 +168,7 @@ as.adf = function(x, ...) {
   output = list()
 
   output$createNewConnection =
-    #charToRaw(paste(iotools::as.output.data.frame(x),collapse="\n"))
-    charToRaw(iotools::as.output.data.frame(x))
+    charToRaw(paste(iotools::as.output.data.frame(x),collapse="\n"))
   output$skip = 0L
   output$chunkProcessor = identity
   output$chunkFormatter = default.chunkFormatter("|", NA, TRUE)
