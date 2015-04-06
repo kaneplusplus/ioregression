@@ -167,8 +167,7 @@ allFactorLevels = function(x) {
 as.adf = function(x, ...) {
   output = list()
 
-  output$createNewConnection =
-    charToRaw(paste(iotools::as.output.data.frame(x),collapse="\n"))
+  output$createNewConnection = iotools::as.output.data.frame(x)
   output$skip = 0L
   output$chunkProcessor = identity
   output$chunkFormatter = default.chunkFormatter("|", NA, TRUE)
@@ -215,8 +214,8 @@ as.adf = function(x, ...) {
 #' @export
 adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
                      formula, contrasts=NULL, subset=NULL, weights=NULL,
-                     na.action=NULL, offset=NULL, passedVars=NULL, ..., 
-                     chunk.max.line=65536L, CH.MAX.SIZE=33554432L, 
+                     na.action=NULL, offset=NULL, passedVars=NULL, ...,
+                     chunk.max.line=65536L, CH.MAX.SIZE=33554432L,
                      CH.MERGE = list, parallel=1L) {
   if (!inherits(x, "adf")) stop("x must be an 'adf' object!")
 
@@ -235,13 +234,13 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
   switch(type,
     data.frame={
       FUN2 = function(z) {
-        FUN(x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses, 
+        FUN(x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses,
                                               x$levels)), passedVars)
       }
     },
     model={
       FUN2 = function(z) {
-        df = x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses, 
+        df = x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses,
                                                x$levels))
         mf = match.call(expand.dots = FALSE)[1L]
         mf$formula = formula
@@ -269,7 +268,7 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
     },
     sparse.model={
       FUN2 = function(z) {
-        df = x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses, 
+        df = x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses,
                               x$levels))
         mf = match.call(expand.dots = FALSE)[1L]
         mf$formula = formula
@@ -290,7 +289,7 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
         mf = eval(mf, parent.frame())
         mt = attr(mf, "terms")
         return(FUN(list(y=model.response(mf, "numeric"),
-                        x=Matrix::sparse.model.matrix(mt, mf, 
+                        x=Matrix::sparse.model.matrix(mt, mf,
                                                       contrasts.arg=contrasts),
                         w=as.vector(model.weights(mf)),
                         offset=as.vector(model.offset(mf))),passedVars))
