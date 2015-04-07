@@ -54,6 +54,6 @@ expect_equal(summary(iofit)[c("sigma","df","r.squared","adj.r.squared","fstatist
              summary(lmfit)[c("sigma","df","r.squared","adj.r.squared","fstatistic")])
 
 # Test data frames
-iofit = iolm(Sepal.Width ~ Sepal.Length, iris)
+iofit = iolm(Sepal.Width ~ Sepal.Length, as.adf(iris))
 
 

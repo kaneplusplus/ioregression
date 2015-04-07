@@ -167,6 +167,10 @@ allFactorLevels = function(x) {
 as.adf = function(x, ...) {
   output = list()
 
+  output$levels = lapply(x, levels)
+  factor_cols = which(sapply(x, class) == "factor")
+  for (fc in factor_cols) x[,fc] = as.character(x[,fc])
+  
   output$createNewConnection = iotools::as.output.data.frame(x)
   output$skip = 0L
   output$chunkProcessor = identity
@@ -174,7 +178,7 @@ as.adf = function(x, ...) {
   output$colNames = names(x)
   output$colClasses = sapply(x, class)
   output$levels = lapply(x, levels)
-  for (j in which(output$colClasses == "character"))
+  for (j in setdiff(which(output$colClasses == "character"), factor_cols))
     output$levels[[j]] = unique(x[,j])
 
   class(output) = c("adf")
