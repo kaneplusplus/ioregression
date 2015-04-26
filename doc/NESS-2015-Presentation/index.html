@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+	<html class="sl-root base export loaded">
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<title>Scalable, Exact Approaches to Fitting Linear Models when n &gt;&gt; p: Slides</title>
+		<meta name="description" content="Slides">
+
+		<link rel="stylesheet" type="text/css" href="lib/offline-v2.css">
+	</head>
+	<body class="reveal-viewport theme-font-montserrat theme-color-white-blue">
+		<div class="reveal">
+			<div class="slides">
+				<section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 169px; height: auto;" data-block-id="60fee9970a5ab52ae1fee9fddbc75079"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 10;">
+<h2>Scalable, Exact Approaches to Fitting Linear Models when n &gt;&gt; p</h2>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; min-width: 30px; min-height: 30px; width: 736px; left: 117px; top: 451px;" data-block-id="4906d1844e8f4b3b1dcf86a9e1a6e455"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 12;">
+<p>Michael Kane, Taylor Arnold, and Simon Urbanek</p>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 49px; height: auto;" data-block-id="99857f0b70cb4596a4061a4fce2e975f"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h1>iotools provides</h1>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; min-width: 30px; min-height: 30px; width: 851px; left: 61px; top: 210px;" data-block-id="06a26e0a7b81c4653ea949e8f5fb1cc2"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 12;">
+<ul>
+	<li class="fragment" data-fragment-index="0">
+	<h3>
+<span style="font-size:32px"><span style="text-align:left">A framework for computing on streamed chunks of data</span></span><span style="font-size:32px"><span style="text-align:left"> </span></span>
+</h3>
+	</li>
+	<li class="fragment" data-fragment-index="1">
+	<h3><span style="font-size:32px">Optimized routines for moving data from disk to processor</span></h3>
+	</li>
+</ul>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; min-width: 30px; min-height: 30px; width: 868px; left: 55px; top: 490px;" data-block-id="31be363255f7728945e3fb682877f76a"><div class="sl-block-content fragment" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 13;" data-fragment-index="2">
+<h3><span style="font-size:32px">Let's build a regression library on top of it!</span></h3>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 954px; left: 6px; top: 49px; height: auto;" data-block-id="fa738956211d95bdfb649773962e4ebb"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h2>The design of ioregression</h2>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; width: 851px; left: 61px; top: 210px;" data-block-id="85f43d4e8cd48b43f42d81c4a73ee152"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 12;">
+<ul>
+	<li class="fragment" data-fragment-index="0">
+	<h3><span style="font-size:32px">Build regression preprocessors, kernels, and combiners for different types of linear regressions.</span></h3>
+	</li>
+	<li class="fragment" data-fragment-index="1">
+	<h3><span style="font-size:32px">Use iotools to stream data to the kernels and aggregate the results to get regression coefficients and diagnostics.</span></h3>
+	</li>
+</ul>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; width: 868px; left: 53px; top: 535px;" data-block-id="dd987c2e901bb8a710c845dc45737f55"><div class="sl-block-content fragment" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 13;" data-fragment-index="2">
+<h3><span style="font-size:32px">Why not just use foreach?</span></h3>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 954px; left: 6px; top: 34px; height: auto;" data-block-id="ffabdb62eab409502c79fdd1bdd4fd6f"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h2>ioregression is foreach compatible</h2>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; width: 800px; left: 80px; top: 232px;" data-block-id="791a5477864d6ed30788d3499517e5de"><div class="sl-block-content fragment" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 12;" data-fragment-index="0">
+<h3 style="text-align:left"><span style="font-size:32px">foreach doesn't give you</span></h3>
+
+<ul>
+	<li style="text-align:left">
+	<h3><span style="font-size:32px">optimized io routines</span></h3>
+	</li>
+	<li style="text-align:left">
+	<h3><span style="font-size:32px">Doesn't currently handle Hadoop's data locality</span></h3>
+	</li>
+</ul>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; min-width: 30px; min-height: 30px; width: 800px; left: 80px; top: 499px;" data-block-id="d487bc11dd00fa114a012c8326ca40bb"><div class="sl-block-content fragment" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 13;" data-fragment-index="1">
+<h3 style="text-align:left"><span>Goal is to provide numerical operations required for chunk-wise regressions.</span></h3>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 954px; left: 0px; top: 243px; height: auto;" data-block-id="caf91463b05c7a92b14567118e68e974"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h2>Why linear regressions?</h2>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 954px; left: 3px; top: 103px; height: auto;" data-block-id="9a00f2a5824549c10c37387d5f3bf4e7"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h2>Linear Regressions are Simple</h2>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; min-width: 30px; min-height: 30px; width: 800px; left: 80px; top: 249px;" data-block-id="e605699b5627851f7157a3c1d7e391f4"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 12;">
+<ul>
+	<li class="fragment" data-fragment-index="0">
+	<h3>Assumptions are known</h3>
+	</li>
+	<li class="fragment" data-fragment-index="1">
+	<h3>Diagnostics for assessing fit and assumptions</h3>
+	</li>
+	<li class="fragment" data-fragment-index="2">
+	<h3>Results are interpretable</h3>
+	</li>
+</ul>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 954px; left: 0px; top: 95px; height: auto;" data-block-id="83cc636d9e13240ee6b9a155918adfb7"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;" dir="ui">
+<h2>Linear Regressions are Computationally Efficient</h2>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; min-width: 30px; min-height: 30px; width: 725px; left: 120px; top: 331px;" data-block-id="19d04df3fdec2db6594250ad17728e43"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 12;">
+<ul>
+	<li class="fragment" data-fragment-index="0">
+	<h3>Complexity is O(np^2)</h3>
+	</li>
+	<li class="fragment" data-fragment-index="1">
+	<h3>Model fitting can be parallelized</h3>
+	</li>
+</ul>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 954px; left: 3px; top: 225px; height: auto;" data-block-id="04acfa9d7f30386a62bb06dde859d78d"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;" dir="ui">
+<h2>Linear Regressions are Compatible with Other Analyses</h2>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="height: auto; min-width: 30px; min-height: 30px; width: 825px; left: 80px; top: 193px;" data-block-id="2f63d0df5ddc252c536504bdce13f57c"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 11;">
+<pre style="text-align:left"><span style="font-size:24px">&gt; train_inds = sample(1:150, 130)
+&gt; iris_train = iris[train_inds,]
+&gt; iris_test = iris[setdiff(1:150, train_inds),]
+&gt; lm_fit = lm(Sepal.Length ~ Sepal.Width+Petal.Length,  
++             data=iris_train)
+&gt; sd(predict(lm_fit, iris_test) - iris_test$Sepal.Length)
+[1] 0.3879703
+</span>
+</pre>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="height: auto; width: 939px; left: 13px; top: 124px;" data-block-id="88f0b7878e721b76b23d6a08c8754dea"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 11;" dir="ui">
+<pre><span style="font-size:24px">&gt; library(randomForest)
+&gt; iris_train$residual = lm_fit$residuals
+&gt; iris_train$fitted_values = lm_fit$fitted.values
+&gt; rf_fit = randomForest(
++   residual ~ Sepal.Width+Petal.Length+fitted_values,  
++   data=iris_train)
+&gt; 
+&gt; lm_pred = predict(lm_fit, iris_test)
+&gt; iris_test$fitted_values = lm_pred
+&gt; sd(predict(rf_fit, iris_test)+lm_pred - iris_test$Sepal.Length)
+[1] 0.3458326</span></pre>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="height: auto; width: 886px; left: 23px; top: 240px;" data-block-id="91d02223bf89ede351f09fb99334cf53"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 11;" dir="ui">
+<pre><span style="font-size:24px">&gt; rf_fit2 = randomForest(
++   Sepal.Length ~ Sepal.Width+Petal.Length,
++   data=iris_train)
+&gt; sd(predict(rf_fit2, iris_test) - iris_test$Sepal.Length)
+[1] 0.40927</span></pre>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 62px; height: auto;" data-block-id="a086fabbdbe0ff9308fb0d207d21f32e"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h3>Calculating the OLS slope coefficients</h3>
+</div></div>
+<div class="sl-block" data-block-type="code" style="min-width: 30px; min-height: 30px; width: 800px; height: 408px; left: 80px; top: 167px;" data-block-id="edba86a5d9d039fa464b8699f65031b5"><div class="sl-block-content" style="z-index: 12; font-size: 110%;"><pre><code>&gt; x1 = 1:100
+&gt; x2 = x1 * 1.01 + rnorm(100, 0, sd=7e-6)
+&gt; X = cbind(x1, x2)
+&gt; y = x1 + x2
+&gt; 
+&gt; qr.solve(t(X) %*% X) %*% t(X) %*% y
+Error in qr.solve(t(X) %*% X) : singular matrix 'a' in solve
+&gt; 
+&gt; beta = qr.solve(t(X) %*% X, tol=0) %*% t(X) %*% y
+&gt; beta
+        [,1]
+x1 0.9869174
+x2 1.0170043
+&gt; sd(y - X %*% beta)
+[1] 0.1187066
+&gt; 
+&gt; sd(lm(y ~ x1 + x2 -1)$residuals)
+[1] 9.546656e-15</code></pre></div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 62px; height: auto;" data-block-id="8d75aa7eab8885d8618457a71514ce2d"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h3>What if we think of x1 and x2 as being highly correlated instead?</h3>
+</div></div>
+<div class="sl-block" data-block-type="code" style="width: 800px; height: 244px; left: 80px; top: 263px;" data-block-id="bf36af79b7e7e7b34e6341ed73edccba"><div class="sl-block-content" style="z-index: 12; font-size: 130%;"><pre><code>&gt; X = matrix(x1, ncol=1)
+&gt; beta = qr.solve(t(X) %*% X, tol=0) %*% t(X) %*% y
+&gt; beta
+     [,1]
+[1,] 2.01
+&gt; sd(y - X %*% beta)
+[1] 6.896263e-06</code></pre></div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 87px; height: auto;" data-block-id="582853658819e3a7ee3ba58b05362723"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h3><span style="font-size:48px">What does this buy us?</span></h3>
+</div></div>
+<div class="sl-block" data-block-type="image" style="min-width: 30px; min-height: 30px; width: 495.647058823529px; height: 220px; left: 240px; top: 216px;" data-block-id="291a6359f137093e1a94812e9c87c414"><div class="sl-block-content" style="z-index: 12;"><img data-natural-width="766" data-natural-height="340" data-src="scalable-exact-approaches-to-fitting-linear-models-when-n-p/1309455-Screen_Shot_2015-04-24_at_10.55.15_PM.png"></div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 87px; height: auto;" data-block-id="6a8dafe99874cfddcef6bdb013be0ca7"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h3><span style="font-size:48px">The regression calculation becomes</span></h3>
+</div></div>
+<div class="sl-block" data-block-type="math" style="width: auto; height: auto; left: 104px; top: 277px;" data-block-id="3b7027952cb9749c7a2abd2b69225938"><div class="sl-block-content" style="z-index: 12;">
+<div class="math-input">\hat{\beta} = \left(\sum_{i=1}^r X_i^T X_i \right)^{-1} \left(\sum_{i=1}^r X_i^T Y_i\right)</div>
+<div class="math-output"><span class="katex"><span class="katex-inner"><span class="strut" style="height: 0.95788em;"></span><span class="strut bottom" style="height: 1.30789em; vertical-align: -0.35001em;"></span><span class="base textstyle uncramped"><span class="mord accent"><span class="vlist"><span class="" style="top: 0em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="mord textstyle cramped"><span class="mord mathit" style="margin-right: 0.05278em;">β</span></span></span><span class="" style="top: -0.26344em; margin-left: 0.16668em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="accent-body"><span class="">^</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="mrel">=</span><span class="minner"><span class="minner textstyle uncramped"><span class="style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size1">(</span></span><span class="mop"><span class="op-symbol small-op mop" style="top: -0.000005000000000005em;">∑</span><span class="vlist"><span class="" style="top: 0.30001em; margin-left: 0em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord scriptstyle cramped"><span class="mord mathit">i</span><span class="mrel">=</span><span class="mord">1</span></span></span></span><span class="" style="top: -0.364em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord mathit" style="margin-right: 0.02778em;">r</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="mord"><span class="mord mathit" style="margin-right: 0.07847em;">X</span><span class="vlist"><span class="" style="top: 0.258664em; margin-left: -0.07847em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathit">i</span></span></span><span class="" style="top: -0.363em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord mathit" style="margin-right: 0.13889em;">T</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="mord"><span class="mord mathit" style="margin-right: 0.07847em;">X</span><span class="vlist"><span class="" style="top: 0.15em; margin-right: 0.05em; margin-left: -0.07847em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathit">i</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size1">)</span></span></span><span class="vlist"><span class="" style="top: -0.464em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord scriptstyle uncramped"><span class="mord">−</span><span class="mord">1</span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="minner textstyle uncramped"><span class="style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size1">(</span></span><span class="mop"><span class="op-symbol small-op mop" style="top: -0.000005000000000005em;">∑</span><span class="vlist"><span class="" style="top: 0.30001em; margin-left: 0em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord scriptstyle cramped"><span class="mord mathit">i</span><span class="mrel">=</span><span class="mord">1</span></span></span></span><span class="" style="top: -0.364em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord mathit" style="margin-right: 0.02778em;">r</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="mord"><span class="mord mathit" style="margin-right: 0.07847em;">X</span><span class="vlist"><span class="" style="top: 0.258664em; margin-left: -0.07847em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathit">i</span></span></span><span class="" style="top: -0.363em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord mathit" style="margin-right: 0.13889em;">T</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="mord"><span class="mord mathit" style="margin-right: 0.22222em;">Y</span><span class="vlist"><span class="" style="top: 0.15em; margin-right: 0.05em; margin-left: -0.22222em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathit">i</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size1">)</span></span></span></span></span></span></div>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; width: 720px; left: 118px; top: 420px;" data-block-id="5f6d5405ae9e6c45c04780eb580c9aa8"><div class="sl-block-content fragment" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 13;" data-fragment-index="0">
+<p><span style="color:rgb(17, 17, 17)">It is easy to implement OLS (and other regressions) in an embarrassingly parallel way.</span></p>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 87px; height: auto;" data-block-id="8a45f667227ee86a313b3efa0ac62a7d"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h3><span style="font-size:48px">How do I use it?</span></h3>
+</div></div>
+<div class="sl-block" data-block-type="code" style="min-width: 30px; min-height: 30px; width: 887px; height: 321px; left: 36px; top: 190px;" data-block-id="236c3a72842a863faeb7d8510fe78991"><div class="sl-block-content" style="z-index: 12; font-size: 150%;"><pre><code>library(ioregression)
+file_name = "2008.csv"
+data = adf(file_name, sep=",", header=TRUE)
+system.time({iofit = iolm(DepDelay ~ Distance, data=data)})
+##    user  system elapsed 
+## 124.884   2.810 127.802 
+</code></pre></div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 87px; height: auto;" data-block-id="1b31c3823ac63ad48424919ae0d722dd"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h3><span style="font-size:48px">How fast is lm?</span></h3>
+</div></div>
+<div class="sl-block" data-block-type="code" style="width: 761px; height: 280px; left: 119px; top: 216px;" data-block-id="94aed0c171a23b2aac5611451255569a"><div class="sl-block-content" style="z-index: 12; font-size: 150%;"><pre><code>system.time({
+df = read.table(file_name, header=TRUE, sep=",")
+lmfit = lm(DepDelay ~ Distance, data=df)
+})
+##    user  system elapsed 
+## 134.436   3.577 138.258 </code></pre></div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 50px; top: 43px; height: auto;" data-block-id="346d4d6f6c64b2d863acdd00ad881a09"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text">
+<h1>Status</h1>
+</div></div>
+<div class="sl-block" data-block-type="text" style="width: 800px; left: 62px; top: 178px; height: auto;" data-block-id="aa77c730961b3906b749e0500fffb896"><div class="sl-block-content" data-placeholder-tag="h2" data-placeholder-text="Subtitle">
+<p style="color:rgb(17, 17, 17)">Under development</p>
+
+<ul style="color:rgb(17, 17, 17)">
+	<li>Routines:
+	<ul>
+		<li>OLS </li>
+		<li>Ridge</li>
+		<li>LARS</li>
+		<li>GLM</li>
+		<li>glmnet (coming)</li>
+	</ul>
+	</li>
+	<li>Platforms
+	<ul>
+		<li>iotools (done)</li>
+		<li>others?</li>
+	</ul>
+	</li>
+</ul>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 270px; height: auto;" data-block-id="641f6bdd524f5636c6df0ab2452e1a72"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text">
+<h3 style="color:rgb(17, 17, 17)"><a href="https://github.com/kaneplusplus/ioregression" target="_blank">github.com/kaneplusplus/ioregression</a></h3>
+</div></div></section>
+			</div>
+		</div>
+
+		<script>
+			var SLConfig = {"deck": {"id":393466,"slug":"scalable-exact-approaches-to-fitting-linear-models-when-n-p","title":"Scalable, Exact Approaches to Fitting Linear Models when n \u003e\u003e p","description":"","visibility":"all","published_at":"2015-04-26T14:32:40.677Z","sanitize_messages":null,"thumbnail_url":"https://s3.amazonaws.com/media-p.slid.es/thumbnails/secure/8f2615/decks.jpg","view_count":0,"user":{"id":138422,"username":"michaelkane","name":"Michael Kane","description":"","thumbnail_url":"https://lh6.googleusercontent.com/-dad89G48aAY/AAAAAAAAAAI/AAAAAAAABvc/UCcQIICxXZQ/photo.jpg","pro":true,"enterprise":false,"enterprise_manager":false,"registered":true},"background_transition":"slide","transition":"default","theme_id":null,"theme_font":"montserrat","theme_color":"white-blue","auto_slide_interval":0,"comments_enabled":true,"forking_enabled":false,"rolling_links":false,"center":false,"should_loop":false,"rtl":false,"version":2,"notes":{}}};
+			SLConfig.current_user = {
+				name: "Michael Kane",
+				username: "michaelkane",
+				pro: true
+			};
+		</script>
+
+		<script src="lib/head.min.js"></script>
+		<script src="lib/reveal.min.js"></script>
+		<script>
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				mouseWheel: false,
+
+				autoSlide: SLConfig.deck.auto_slide_interval || 0,
+				autoSlideStoppable: true,
+
+				rolling_links: SLConfig.deck.rolling_links || true,
+				center: SLConfig.deck.center || false,
+				loop: SLConfig.deck.should_loop || false,
+				rtl: SLConfig.deck.rtl || false,
+
+				transition: SLConfig.deck.transition,
+				backgroundTransition: SLConfig.deck.background_transition,
+
+				dependencies: [
+					{ src: 'lib/reveal-plugins/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'lib/reveal-plugins/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'lib/reveal-plugins/highlight/highlight.js', async: true, callback: function() { hljs.initHighlighting(); hljs.initHighlightingOnLoad(); } },
+					{ src: 'lib/reveal-plugins/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+			// Make Slides speaker notes available in the reveal.js speaker view
+			if( SLConfig.deck.notes ) {
+				[].forEach.call( document.querySelectorAll( '.reveal .slides section' ), function( slide ) {
+
+					var value = SLConfig.deck.notes[ slide.getAttribute( 'data-id' ) ];
+					if( value && typeof value === 'string' ) {
+						slide.setAttribute( 'data-notes', value );
+					}
+
+				} );
+			}
+		</script>
+
+		
+
+	</body>
+</html>
