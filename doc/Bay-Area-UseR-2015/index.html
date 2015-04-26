@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+	<html class="sl-root base export loaded">
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<title>Bay Area R User Group: Slides</title>
+		<meta name="description" content="Slides">
+
+		<link rel="stylesheet" type="text/css" href="lib/offline-v2.css">
+	</head>
+	<body class="reveal-viewport theme-font-montserrat theme-color-sand-blue">
+		<div class="reveal">
+			<div class="slides">
+				<section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 80px; height: auto;" data-block-id="e2086ec1e4fdeffdc038a60ca06c9d6e"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h1>A Sneak Peak at the ioregression Package</h1>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; min-width: 30px; min-height: 30px; width: 600px; left: 180px; top: 428px;" data-block-id="27f7f7874d29f0e32e897830b20784e4"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 12;">
+<p>Michael Kane</p>
+
+<p>Yale University and Phronesis LLC</p>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 81px; height: auto;" data-block-id="0f3498395fd7d2625983b389a2b48c29"><div class="sl-block-content" data-placeholder-tag="h2" data-placeholder-text="Title Text">
+<h2>What am I going to talk about?</h2>
+</div></div>
+<div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 295px; height: auto;" data-block-id="0d09da3aa9969bde49ab9172d0266fc7"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text">
+<ul>
+	<li>Provide an example illustrating numerical (in)stability</li>
+	<li>Show that if you give up a little stability you can easily implement large (big n small p/big m small n) regressions out of core</li>
+	<li>Introduce ioregression, a package that builds on iotools, a package for quickly streaming data from disk to R in chunks</li>
+</ul>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 70px; height: auto;" data-block-id="bc58b782dc0f67beb3fc3904d8d44ac5"><div class="sl-block-content" data-placeholder-tag="h2" data-placeholder-text="Title Text" style="z-index: 10;">
+<h2>Who else is involved with this?</h2>
+</div></div>
+<div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 288px; height: auto;" data-block-id="08120226963d9c8f9842a86cae8df0fb"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 11;">
+<p><span style="font-size:48px">Simon Urbanek - iotools</span></p>
+
+<p><span style="font-size:48px">Taylor Arnold - iotools and ioregression</span></p>
+</div></div></section><section><div class="sl-block" data-block-type="code" style="min-width: 30px; min-height: 30px; width: 800px; height: 534px; left: 80px; top: 78px;" data-block-id="7e0a312e3055afed2ed19889e3e36bd6"><div class="sl-block-content" style="z-index: 11; font-size: 130%;"><pre><code>&gt; x1 = 1:100
+&gt; x2 = x1 * 1.01 + rnorm(100, 0, sd=7e-6)
+&gt; X = cbind(x1, x2)
+&gt; y = x1 + x2
+&gt; 
+&gt; qr.solve(t(X) %*% X) %*% t(X) %*% y
+Error in qr.solve(t(X) %*% X) : singular matrix 'a' in solve
+&gt; 
+&gt; beta = qr.solve(t(X) %*% X, tol=0) %*% t(X) %*% y
+&gt; beta
+        [,1]
+x1 0.9869174
+x2 1.0170043
+&gt; sd(y - X %*% beta)
+[1] 0.1187066
+&gt; 
+&gt; sd(lm(y ~ x1 + x2 -1)$residuals)
+[1] 9.546656e-15
+</code></pre></div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 198px; height: auto;" data-block-id="e930f196930783fc221cf9ebb833bdb5"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text">
+<h2>Why would I include x1 and x2 if they are (nearly) colinear?</h2>
+</div></div></section><section><div class="sl-block" data-block-type="code" style="min-width: 30px; min-height: 30px; width: 792px; height: 309px; left: 88px; top: 151px;" data-block-id="477933fed3f987ccb1ea4f8089239e30"><div class="sl-block-content" style="z-index: 11; font-size: 140%;"><pre><code>&gt; X = matrix(x1, ncol=1)
+&gt; beta = qr.solve(t(X) %*% X, tol=0) %*% t(X) %*% y
+&gt; beta
+     [,1]
+[1,] 2.01
+&gt; sd(y - X %*% beta)
+[1] 6.896263e-06
+</code></pre></div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 246px; height: auto;" data-block-id="801ff5b69a8a2e58d63ddfaa1ce61849"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text">
+<h2><span>Assume numerical instability is colinearity</span></h2>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 103px; height: auto;" data-block-id="f9c24914aa346f720e2068c071e2fc8a"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 11;">
+<h2><span>What does this buy us?</span></h2>
+</div></div>
+<div class="sl-block" data-block-type="math" style="width: auto; height: auto; min-width: 30px; min-height: 30px; left: 96px; top: 290px;" data-block-id="da9a5b957563a49107b19e21591f0830"><div class="sl-block-content" style="z-index: 12;">
+<div class="math-input">\hat{\beta} = \left(\sum_{i=1}^r X_i^T X_i \right)^{-1} \left(\sum_{i=1}^r X_i^T Y_i\right)</div>
+<div class="math-output"><span class="katex"><span class="katex-inner"><span class="strut" style="height: 0.95788em;"></span><span class="strut bottom" style="height: 1.30789em; vertical-align: -0.35001em;"></span><span class="base textstyle uncramped"><span class="mord accent"><span class="vlist"><span class="" style="top: 0em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="mord textstyle cramped"><span class="mord mathit" style="margin-right: 0.05278em;">β</span></span></span><span class="" style="top: -0.26344em; margin-left: 0.16668em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="accent-body"><span class="">^</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="mrel">=</span><span class="minner"><span class="minner textstyle uncramped"><span class="style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size1">(</span></span><span class="mop"><span class="op-symbol small-op mop" style="top: -0.000005000000000005em;">∑</span><span class="vlist"><span class="" style="top: 0.30001em; margin-left: 0em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord scriptstyle cramped"><span class="mord mathit">i</span><span class="mrel">=</span><span class="mord">1</span></span></span></span><span class="" style="top: -0.364em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord mathit" style="margin-right: 0.02778em;">r</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="mord"><span class="mord mathit" style="margin-right: 0.07847em;">X</span><span class="vlist"><span class="" style="top: 0.258664em; margin-left: -0.07847em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathit">i</span></span></span><span class="" style="top: -0.363em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord mathit" style="margin-right: 0.13889em;">T</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="mord"><span class="mord mathit" style="margin-right: 0.07847em;">X</span><span class="vlist"><span class="" style="top: 0.15em; margin-right: 0.05em; margin-left: -0.07847em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathit">i</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size1">)</span></span></span><span class="vlist"><span class="" style="top: -0.464em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord scriptstyle uncramped"><span class="mord">−</span><span class="mord">1</span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="minner textstyle uncramped"><span class="style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size1">(</span></span><span class="mop"><span class="op-symbol small-op mop" style="top: -0.000005000000000005em;">∑</span><span class="vlist"><span class="" style="top: 0.30001em; margin-left: 0em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord scriptstyle cramped"><span class="mord mathit">i</span><span class="mrel">=</span><span class="mord">1</span></span></span></span><span class="" style="top: -0.364em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord mathit" style="margin-right: 0.02778em;">r</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="mord"><span class="mord mathit" style="margin-right: 0.07847em;">X</span><span class="vlist"><span class="" style="top: 0.258664em; margin-left: -0.07847em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathit">i</span></span></span><span class="" style="top: -0.363em; margin-right: 0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord mathit" style="margin-right: 0.13889em;">T</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="mord"><span class="mord mathit" style="margin-right: 0.22222em;">Y</span><span class="vlist"><span class="" style="top: 0.15em; margin-right: 0.05em; margin-left: -0.22222em;"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathit">i</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span class="" style="font-size: 0em;">​</span></span>​</span></span></span><span class="style-wrap reset-textstyle textstyle uncramped" style="top: 0em;"><span class="delimsizing size1">)</span></span></span></span></span></span></div>
+</div></div>
+<div class="sl-block" data-block-type="text" style="height: auto; min-width: 30px; min-height: 30px; width: 600px; left: 180px; top: 432px;" data-block-id="afa443f32ede4913c5e67b4edfd2176f"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 13;">
+<p>It is easy to implement OLS (and other regressions) in an embarrassingly parallel way.</p>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="height: auto; min-width: 30px; min-height: 30px; width: 600px; left: 180px; top: 210px;" data-block-id="cf23103c572c1c674cdad8174b2842aa"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 11;">
+<h2>Analyses can spend a lot of compute time doing IO</h2>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="height: auto; width: 600px; left: 180px; top: 77px;" data-block-id="4fc7c975b58b755019837b0bdd416170"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text" style="z-index: 11;">
+<h2>iotools to the rescue</h2>
+</div></div>
+<div class="sl-block" data-block-type="code" style="min-width: 30px; min-height: 30px; width: 500px; height: 300px; left: 230px; top: 200px;" data-block-id="d6fa459bf0344fdb14b3c6dde1287faa"><div class="sl-block-content" style="z-index: 12;"><pre><code></code></pre></div></div>
+<div class="sl-block" data-block-type="code" style="min-width: 30px; min-height: 30px; width: 916px; height: 401px; left: 18px; top: 200px;" data-block-id="df3c2abc636dc2fefee46c15746c4597"><div class="sl-block-content" style="z-index: 13; font-size: 115%;"><pre><code>library(iotools)
+
+col_classes = c(rep("integer", 8), "character", "integer", "character",
+                rep("integer", 5), "character", "character", rep("integer", 4),
+                "character", rep("integer", 6))
+
+system.time({
+  nr = chunk.apply("airline.csv",
+              function(x) {
+                df = dstrsplit(x, col_types=col_classes, sep=",")
+                nrow(df)
+              }, CH.MERGE=list, parallel=8)
+})
+Reduce(`+`, nr)
+</code></pre></div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 15px; height: auto;" data-block-id="b9ce17dcd401e1f532d98a4f62bfc385"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text" style="z-index: 10;">
+<h2>We can build regression routines on iotools</h2>
+</div></div>
+<div class="sl-block" data-block-type="code" style="min-width: 30px; min-height: 30px; width: 882px; height: 494px; left: 33px; top: 173px;" data-block-id="0071f2aab7638d26f316a2b5df719500"><div class="sl-block-content" style="z-index: 12;"><pre><code>library(ioregression)
+col_names = c("Year", "Month", "DayofMonth", "DayOfWeek", "DepTime",
+              "CRSDepTime", "ArrTime", "CRSArrTime", "UniqueCarrier",
+              "FlightNum", "TailNum", "ActualElapsedTime", "CRSElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Origin", "Dest", "Distance",
+              "TaxiIn", "TaxiOut", "Cancelled", "CancellationCode", "Diverted",
+              "CarrierDelay", "WeatherDelay", "NASDelay", "SecurityDelay",
+              "LateAircraftDelay")
+
+data_frame_preprocessor = function(x) {
+  colnames(x) = col_names
+  # Get rid of the header row.
+  if (x$UniqueCarrier[1] == "UniqueCarrier")
+    x = x[-1,]
+  x
+}
+
+system.time({
+  fit = iolm(DepDelay ~ ArrDelay, bzfile("2008.csv.bz2", "rb"), data_frame_preprocessor)
+})
+
+summary(fit, bzfile("2008.csv.bz2", "rb"), data_frame_preprocessor)
+</code></pre></div></div></section><section><div class="sl-block" data-block-type="code" style="width: 882px; height: 650px; left: 33px; top: 17px;" data-block-id="3c406fd46fb9f05bd2bcc5c5425b9904"><div class="sl-block-content" style="z-index: 12;"><pre><code>fix_times &lt;- function(t) {
+  t &lt;- as.character(t)
+  l4 &lt;- nchar(t) == 4
+  l3 &lt;- !l4
+  ret &lt;- rep(0, length(t))
+  ret[l4] &lt;- as.numeric(substr(t[l4], 1, 2)) * 60 +
+    as.numeric(substr(t[l4], 3, 4))
+  ret[l3] &lt;- as.numeric(substr(t[l3], 1, 1)) * 60 +
+    as.numeric(substr(t[l3], 2, 3))
+  ret
+} 
+
+data_frame_preprocessor = function(x) {
+  colnames(x) = col_names
+  # Get rid of the header row.
+  if (x$UniqueCarrier[1] == "UniqueCarrier")
+    x = x[-1,]
+  x$DepTime = fix_times(x$DepTime)
+  x$DayOfWeek = factor(as.character(x$DayOfWeek), levels=1:7,
+                       labels=as.character(1:7))
+  x
+}
+
+system.time({
+  fit = iolm(DepDelay ~ DayOfWeek + DepTime, "airline.csv", 
+             data_frame_preprocessor, parallel=8)
+})
+
+summary(fit, "airline.csv", data_frame_preprocessor, parallel=8)
+</code></pre></div></div></section><section><div class="sl-block" data-block-type="text" style="width: 800px; left: 80px; top: 70px; height: auto;" data-block-id="50a78704fbb1b92957ac8c208a201213"><div class="sl-block-content" data-placeholder-tag="h2" data-placeholder-text="Title Text">
+<h2>Current Status</h2>
+</div></div>
+<div class="sl-block" data-block-type="text" style="width: 511px; left: 225px; top: 179px; height: auto;" data-block-id="53aff78166d169bcf9f42dacd79832e8"><div class="sl-block-content" data-placeholder-tag="p" data-placeholder-text="Text">
+<p>Under heavily development</p>
+
+<ul>
+	<li>
+<span>Routines:</span>
+
+	<ul>
+		<li><span>OLS  (initial version)</span></li>
+		<li><span><span>LARS (initial version)</span></span></li>
+		<li><span><span><span>GLM</span></span></span></li>
+		<li><span><span><span><span>glmnet</span></span></span></span></li>
+	</ul>
+	</li>
+	<li>
+<span>Platforms</span>
+	<ul>
+		<li><span><span>iotools (done)</span></span></li>
+		<li><span><span><span>ROctopus (coming)</span></span></span></li>
+	</ul>
+	</li>
+</ul>
+</div></div></section><section><div class="sl-block" data-block-type="text" style="width: 939px; left: 11px; top: 270px; height: auto;" data-block-id="d1dd7238fbafcacdc6f81d1fd821ceb4"><div class="sl-block-content" data-placeholder-tag="h1" data-placeholder-text="Title Text">
+<h3><a href="https://github.com/kaneplusplus/ioregression" target="_blank">github.com/kaneplusplus/ioregression</a></h3>
+</div></div></section>
+			</div>
+		</div>
+
+		<script>
+			var SLConfig = {"deck": {"id":334322,"slug":"bay-area-r-user-group-lightning-talk","title":"Bay Area R User Group","description":"","visibility":"all","published_at":"2015-01-27T22:57:50.113Z","sanitize_messages":null,"thumbnail_url":"https://s3.amazonaws.com/media-p.slid.es/thumbnails/michaelkane/1f7b86/deck.jpg","view_count":35,"user":{"id":138422,"username":"michaelkane","name":"Michael Kane","description":"","thumbnail_url":"https://lh6.googleusercontent.com/-dad89G48aAY/AAAAAAAAAAI/AAAAAAAABvc/UCcQIICxXZQ/photo.jpg","pro":true,"enterprise":false,"enterprise_manager":false,"registered":true},"background_transition":"slide","transition":"default","theme_id":null,"theme_font":"montserrat","theme_color":"sand-blue","auto_slide_interval":0,"comments_enabled":true,"forking_enabled":false,"rolling_links":false,"center":false,"should_loop":false,"rtl":false,"version":2,"notes":{}}};
+			SLConfig.current_user = {
+				name: "Michael Kane",
+				username: "michaelkane",
+				pro: true
+			};
+		</script>
+
+		<script src="lib/head.min.js"></script>
+		<script src="lib/reveal.min.js"></script>
+		<script>
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				mouseWheel: false,
+
+				autoSlide: SLConfig.deck.auto_slide_interval || 0,
+				autoSlideStoppable: true,
+
+				rolling_links: SLConfig.deck.rolling_links || true,
+				center: SLConfig.deck.center || false,
+				loop: SLConfig.deck.should_loop || false,
+				rtl: SLConfig.deck.rtl || false,
+
+				transition: SLConfig.deck.transition,
+				backgroundTransition: SLConfig.deck.background_transition,
+
+				dependencies: [
+					{ src: 'lib/reveal-plugins/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'lib/reveal-plugins/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'lib/reveal-plugins/highlight/highlight.js', async: true, callback: function() { hljs.initHighlighting(); hljs.initHighlightingOnLoad(); } },
+					{ src: 'lib/reveal-plugins/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+			// Make Slides speaker notes available in the reveal.js speaker view
+			if( SLConfig.deck.notes ) {
+				[].forEach.call( document.querySelectorAll( '.reveal .slides section' ), function( slide ) {
+
+					var value = SLConfig.deck.notes[ slide.getAttribute( 'data-id' ) ];
+					if( value && typeof value === 'string' ) {
+						slide.setAttribute( 'data-notes', value );
+					}
+
+				} );
+			}
+		</script>
+
+		
+
+	</body>
+</html>
