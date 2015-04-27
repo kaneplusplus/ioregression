@@ -3,9 +3,6 @@ library(glmnet)
 
 data("QuickStartExample")
 
-x=matrix(rnorm(100*20),100,20)
-y=rnorm(100)
-
 # Standardize.
 col_means = colMeans(x)
 x = x - matrix(data=col_means, ncol=ncol(x), nrow=nrow(x), byrow=TRUE)
