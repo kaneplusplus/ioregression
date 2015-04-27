@@ -3,6 +3,9 @@ library(glmnet)
 
 data("QuickStartExample")
 
+x=matrix(rnorm(100*20),100,20)
+y=rnorm(100)
+
 # Standardize.
 col_means = colMeans(x)
 x = x - matrix(data=col_means, ncol=ncol(x), nrow=nrow(x), byrow=TRUE)
@@ -33,7 +36,7 @@ tol = 0.01
 
 while( as.vector(crossprod(beta-beta_old)) > tol ) {
   beta_old = beta
-  beta = coordinate_wise_update(y, x, beta, lambda, alpha)
+  beta = covariance_update(y, x, beta, lambda, alpha)
 }
 
 # Notice how close:
