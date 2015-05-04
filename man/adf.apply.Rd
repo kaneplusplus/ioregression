@@ -4,10 +4,11 @@
 \alias{adf.apply}
 \title{Low level function for applying over an abstract data frame}
 \usage{
-adf.apply(x, FUN, type = c("data.frame", "model", "sparse.model"), formula,
-  contrasts = NULL, subset = NULL, weights = NULL, na.action = NULL,
-  offset = NULL, passedVars = NULL, ..., chunk.max.line = 65536L,
-  CH.MAX.SIZE = 33554432L, CH.MERGE = list, parallel = 1L)
+adf.apply(x, FUN, type = c("data.frame", "model", "sparse.model"),
+  formula = NULL, contrasts = NULL, subset = NULL, weights = NULL,
+  na.action = NULL, offset = NULL, passedVars = NULL, ...,
+  chunk.max.line = 65536L, CH.MAX.SIZE = 33554432L, CH.MERGE = list,
+  parallel = 1L)
 }
 \arguments{
 \item{x}{an abstract data.frame}

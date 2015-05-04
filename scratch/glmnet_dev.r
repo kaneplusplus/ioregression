@@ -19,7 +19,7 @@ S = function(x, gamma) {
 # Covariance updating. Use if you can fit a pxp matrix in memory.
 covariance_update = function(y, x, beta, lambda, alpha, tol=0.0001) {
   zero_inds = which(abs(beta) < tol )
-  x[zero_inds,] = 0
+#  x[zero_inds,] = 0
   x[,zero_inds] = 0
   ud = crossprod(x, y) - crossprod(x) %*% beta
   S( ud/nrow(x) + beta, lambda*alpha ) / (1 + lambda*(1-alpha))

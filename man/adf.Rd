@@ -7,7 +7,7 @@
 adf(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
   sep = "|", nsep = NA, strict = TRUE, header = FALSE, colNames,
   colClasses, levels = list(), skip = 0L, nrowsClasses = 100L,
-  chunkProcessor = identity, chunkFormatter)
+  chunkProcessor = identity, chunkFormatter, minSplits = 2L)
 }
 \arguments{
 \item{description}{character string.  A description of the connection; the}

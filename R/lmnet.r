@@ -50,10 +50,10 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         return(list(lambda = Matrix::crossprod(d$x, d$y),
                     n = nrow(d$x),
                     sum_w = sum_w,
-                    sum_x = apply(d$x,2,sum),
-                    sum_x_square = apply(d$x^2, 2, sum),
-                    sum_y = sum(d$y * d$w)
-                    sum_y_squared = sum((d$y * d$w)^2)
+                    sum_x = Matrix::colSums(d$x),
+                    sum_x_square = Matrix::colSums(d$x^2),
+                    sum_y = sum(d$y * d$w),
+                    sum_y_squared = sum((d$y * d$w)^2),
                     contrasts=attr(d$x, "contrasts")))
 
       },formula=formula,subset=subset,weights=weights,
@@ -79,10 +79,12 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
  
   # Next filter out columns
   if (filter[1] == "strong") {
-    active_regressors = which(data_lambdas > 2*lambda - max(data_lambdas))
+    active_regressors = 
+      which(as.vector(data_lambdas) > 2*lambda - max(data_lambdas))
   } else if (filter[1] == "safe") {
     active_regressors = 
-      which(data_lambdas > lambda - sqrt(sum_x_square)*sqrt(sum_y_square)*
+      which(as.vector(data_lambdas) > 
+        lambda - sqrt(sum_x_square)*sqrt(sum_y_square)*
         (lambda_max - lambda)/lambda_max)
   } else if (filter[1] == "none") {
     active_regressors = 1:length(data_lambdas)
@@ -97,7 +99,8 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
   beta = Matrix(1, nrow=length(active_regressors))
   beta_old = -beta
   it_num = 0
-  while (it_num <= max_it && as.vector(crossprod(beta-beta_old)) > tolerance) {
+  while (it_num <= max_it && 
+         as.vector(Matrix::crossprod(beta-beta_old)) > tolerance) {
     beta_old = beta 
 
     # Pass through the data to get the covariance update information.
@@ -119,18 +122,26 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
           sum_w = nrow(d$x)
         }
         if (standardize) {
-          d$x = sqrt(
-            (sum_x_square[active_regressors] - mean_x[active_regressors]^2)/n)*
-            (d$x[,active_regressors] - mean_x[active_regressors])
+          # Center
+          d$x = d$x[,active_regressors] - 
+            Matrix(mean_x[active_regressors], ncol=length(active_regressors), 
+                   nrow=nrow(d$x), byrow=TRUE)
+          # Standardize
+          d$x = Matrix(sqrt(sum_x_square[active_regressors]-
+                            mean_x[active_regressors]^2/n), 
+                            ncol=length(active_regressors), 
+                            nrow=nrow(d$x), byrow=TRUE)*d$x
         } else {
           # TODO: This should be easy to fix.
           stop("Unstandardized not supported")
         }
-        return(list(xty = crossprod(d$x, d$y),
-                    xtx = crossprod(d$x))
+        return(list(xty = Matrix::crossprod(d$x, d$y),
+                    xtx = Matrix::crossprod(d$x), x=d$x))
       },formula=formula,subset=subset,weights=weights,
         na.action=na.action, offset=offset, contrasts=contrasts)
     cov_update_info = cov_update_info[!sapply(cov_update_info, is.null)]
+    # Fix from here. Double check xty and xtx are correct.
+    stop("here")
     xty = Reduce(`+`, Map(function(x) x$xty, cov_update_info))
     xtx = Reduce(`+`, Map(function(x) x$xtx, cov_update_info))
     ud = xty - xtx %*% beta
