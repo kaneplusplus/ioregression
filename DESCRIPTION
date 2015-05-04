@@ -10,5 +10,5 @@ Description: This package implements out-of-core regression
   implemented as an R connection.
 Depends: iotools, lars
 Imports: Matrix
-Suggests: testthat, SparkR
+Suggests: testthat
 License: file LICENSE
