@@ -57,6 +57,8 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
   # Construct the connection method
   if (is.function(conMethod)) {
     output$createNewConnection = conMethod
+  } else if (inherits(conMethod,"jobj")) {
+    output$createNewConnection = SparkR::textFile(conMethod, description)
   } else {
     description = path.expand(description)
     conMethod = match.arg(conMethod)
@@ -95,6 +97,9 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
       if (is.null(output$levels[[output$colNames[j]]]))
         output$levels[[output$colNames[j]]] = levels(factor(z[,j]))
     }
+  } else {
+    output$colNames = colNames
+    output$colClasses = colClasses
   }
 
   if (length(output$colNames) != length(output$colClasses))
@@ -121,6 +126,8 @@ default.chunkFormatter = function(sep=sep, nsep=nsep, strict=strict) {
   function(data, colNames, colClasses, levels) {
     col_types = colClasses
     names(col_types) = colNames
+    if (is.list(data))
+      data = as.vector(data, mode="character")
     z = dstrsplit(data, col_types=col_types, sep=sep, nsep=nsep, strict=strict)
     for (j in which(colClasses == "character")) {
       if (!is.null(levels[[colNames[j]]]))
@@ -170,7 +177,7 @@ as.adf = function(x, ...) {
   output$levels = lapply(x, levels)
   factor_cols = which(sapply(x, class) == "factor")
   for (fc in factor_cols) x[,fc] = as.character(x[,fc])
-  
+
   output$createNewConnection = iotools::as.output.data.frame(x)
   output$skip = 0L
   output$chunkProcessor = identity
@@ -217,90 +224,63 @@ as.adf = function(x, ...) {
 #' @return an object of class type
 #' @export
 adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
-                     formula, contrasts=NULL, subset=NULL, weights=NULL,
+                     formula=NULL, contrasts=NULL, subset=NULL, weights=NULL,
                      na.action=NULL, offset=NULL, passedVars=NULL, ...,
                      chunk.max.line=65536L, CH.MAX.SIZE=33554432L,
                      CH.MERGE = list, parallel=1L) {
   if (!inherits(x, "adf")) stop("x must be an 'adf' object!")
-
-  on.exit(close(con))
-  if (is.function(x$createNewConnection)) {
-    con = x$createNewConnection()
-  } else if (is.raw(x$createNewConnection)) {
-    con = rawConnection(x$createNewConnection)
-  } else {
-    con = eval(x$createNewConnection)
-  }
-  if (x$skip > 0L) readLines(con, n=x$skip)
-
-  cr = chunk.reader(con, max.line=chunk.max.line)
   type = match.arg(type)
-  switch(type,
-    data.frame={
-      FUN2 = function(z) {
-        FUN(x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses,
-                                              x$levels)), passedVars)
-      }
-    },
-    model={
-      FUN2 = function(z) {
-        df = x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses,
-                                               x$levels))
-        mf = match.call(expand.dots = FALSE)[1L]
-        mf$formula = formula
-        mf$data = df
-        if (!is.null(subset)) {
-          mf$subset = eval(parse(text=paste0("with(df, ", subset ,")")))
-        }
-        if (!is.null(weights)) {
-          mf$weights = eval(parse(text=paste0("with(df, ", weights ,")")))
-        }
-        if (!is.null(na.action)) {
-          mf$na.action = na.action
-        }
-        if (!is.null(offset)) {
-          mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
-        }
-        mf[[1L]] <- quote(lm.model.frame)
-        mf = eval(mf, parent.frame())
-        mt = attr(mf, "terms")
-        return(FUN(list(y=model.response(mf, "numeric"),
-                        x=model.matrix(mt, mf, contrasts.arg=contrasts),
-                        w=as.vector(model.weights(mf)),
-                        offset=as.vector(model.offset(mf)))), passedVars)
-      }
-    },
-    sparse.model={
-      FUN2 = function(z) {
-        df = x$chunkProcessor(x$chunkFormatter(z, x$colNames, x$colClasses,
-                              x$levels))
-        mf = match.call(expand.dots = FALSE)[1L]
-        mf$formula = formula
-        mf$data = df
-        if (!is.null(subset)) {
-          mf$subset = eval(parse(text=paste0("with(df, ", subset ,")")))
-        }
-        if (!is.null(weights)) {
-          mf$weights = eval(parse(text=paste0("with(df, ", weights ,")")))
-        }
-        if (!is.null(na.action)) {
-          mf$na.action = na.action
-        }
-        if (!is.null(offset)) {
-          mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
-        }
-        mf[[1L]] <- quote(lm.model.frame)
-        mf = eval(mf, parent.frame())
-        mt = attr(mf, "terms")
-        return(FUN(list(y=model.response(mf, "numeric"),
-                        x=Matrix::sparse.model.matrix(mt, mf,
-                                                      contrasts.arg=contrasts),
-                        w=as.vector(model.weights(mf)),
-                        offset=as.vector(model.offset(mf))),passedVars))
-      }
-    })
-  output = chunk.apply(cr, FUN2, CH.MERGE = CH.MERGE, CH.MAX.SIZE = CH.MAX.SIZE,
-                       parallel=parallel)
+
+  FUN2 = function(z) {
+    df = x$chunkFormatter(z, x$colNames, x$colClasses, x$levels)
+    df = x$chunkProcessor(df)
+    if (type == "data.frame") return(FUN(df,passedVars))
+
+    mf = match.call(expand.dots = FALSE)[1L]
+    mf$formula = formula
+    mf$data = df
+    if (!is.null(subset))
+      mf$subset = eval(parse(text=paste0("with(df, ", subset ,")")))
+    if (!is.null(weights))
+      mf$weights = eval(parse(text=paste0("with(df, ", weights ,")")))
+    if (!is.null(na.action))
+      mf$na.action = na.action
+    if (!is.null(offset))
+      mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
+    mf[[1L]] <- quote(lm.model.frame)
+    mf = eval(mf, parent.frame())
+    mt = attr(mf, "terms")
+
+    y = model.response(mf, "numeric")
+    w = as.vector(model.weights(mf))
+    offset = as.vector(model.offset(mf))
+    if (type == "sparse.model")
+      x = Matrix::sparse.model.matrix(mt, mf, contrasts.arg=contrasts)
+    else
+      x = model.matrix(mt, mf, contrasts.arg=contrasts)
+
+    FUN(list(y=y,x=x,w=w,offset=offset), passedVars)
+  }
+
+  if (inherits(x$createNewConnection, "RDD")) {
+    output = SparkR::lapplyPartition(x$createNewConnection, function(z) list(FUN2(z)))
+    output = SparkR::collect(output)
+  } else {
+    on.exit(close(con))
+    if (is.function(x$createNewConnection)) {
+      con = x$createNewConnection()
+    } else if (is.raw(x$createNewConnection)) {
+      con = rawConnection(x$createNewConnection)
+    } else {
+      con = eval(x$createNewConnection)
+    }
+    if (x$skip > 0L) readLines(con, n=x$skip)
+    cr = chunk.reader(con, max.line=chunk.max.line)
+
+    output = chunk.apply(cr, FUN2, CH.MERGE = CH.MERGE, CH.MAX.SIZE = CH.MAX.SIZE,
+                         parallel=parallel)
+  }
+
   return(output)
 }
 
