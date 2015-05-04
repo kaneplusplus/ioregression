@@ -7,7 +7,6 @@ r_binary_packages:
 
 r_github_packages:
   - s-u/iotools
-  - amplab-extras/SparkR-pkg/pkg
 
 after_success:
   - Rscript -e 'library(covr);coveralls()'
