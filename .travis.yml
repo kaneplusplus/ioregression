@@ -1,0 +1,13 @@
+language: r
+sudo: required
+warnings_are_errors: true
+
+r_binary_packages:
+  - lars
+
+r_github_packages:
+  - s-u/iotools
+
+after_success:
+  - Rscript -e 'library(covr);coveralls()'
+

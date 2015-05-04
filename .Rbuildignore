@@ -1,0 +1,6 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+appveyor.yml
+.git
+.travis.yml
+.gitignore
