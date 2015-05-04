@@ -69,22 +69,31 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
   needHead = (missing(colNames) || missing(colClasses) ||
               length(setdiff(colNames[colClasses %in% c("character", "factor")],names(levels))))
   if (needHead) {
-    on.exit(close(con))
-    if (is.function(output$createNewConnection)) {
-      con = output$createNewConnection()
+    if (inherits(output$createNewConnection, "RDD")) {
+      rows = SparkR::lapplyPartition(output$createNewConnection, function(z) head(z,n=nrowsClasses))
+      rows = SparkR::collect(rows)
+      rows = as.vector(rows, mode="character")
     } else {
-      con = eval(output$createNewConnection)
+      on.exit(close(con))
+      if (is.function(output$createNewConnection)) {
+        con = output$createNewConnection()
+      } else {
+        con = eval(output$createNewConnection)
+      }
+      readLines(con, n=output$skip - header)
+      if (missing(colNames) && header)
+        output$colNames = strsplit(readLines(con,1L), split=sep, fixed=TRUE)[[1]]
+
+      rows = readLines(con, n=nrowsClasses)
     }
-    readLines(con, n=output$skip - header)
-    if (missing(colNames) && header) {}
-      output$colNames = strsplit(readLines(con,1L), split=sep, fixed=TRUE)[[1]]
+
     if (missing(chunkFormatter)) {
-      z = as.data.frame(mstrsplit(readLines(con, n=nrowsClasses), sep=sep, nsep=nsep),
+      z = as.data.frame(iotools::mstrsplit(rows, sep=sep, nsep=nsep),
                         stringsAsFactors=FALSE)
       if (missing(colNames) && !header)
         output$colNames = sprintf("V%d", seq(ncol(z)))
     } else {
-      z = chunkFormatter(readLines(con, n=nrowsClasses),
+      z = chunkFormatter(rows,
                           ifelse(missing(colNames), NULL, colNames),
                           ifelse(missing(colClasses), NULL, colClasses),
                           output$levels)
@@ -228,6 +237,7 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
                      na.action=NULL, offset=NULL, passedVars=NULL, ...,
                      chunk.max.line=65536L, CH.MAX.SIZE=33554432L,
                      CH.MERGE = list, parallel=1L) {
+
   if (!inherits(x, "adf")) stop("x must be an 'adf' object!")
   type = match.arg(type)
 
@@ -247,7 +257,7 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
       mf$na.action = na.action
     if (!is.null(offset))
       mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
-    mf[[1L]] <- quote(lm.model.frame)
+    mf[[1L]] <- quote(model.frame)
     mf = eval(mf, parent.frame())
     mt = attr(mf, "terms")
 
