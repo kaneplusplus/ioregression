@@ -44,7 +44,8 @@
 adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
                 sep="|", nsep=NA, strict=TRUE, header=FALSE,
                 colNames, colClasses, levels = list(),
-                skip=0L, nrowsClasses=100L, chunkProcessor = identity, chunkFormatter) {
+                skip=0L, nrowsClasses=100L, chunkProcessor = identity,
+                chunkFormatter, minSplits=2L) {
 
   if (missing(colNames) && !missing(colClasses) && !is.null(names(colClasses)))
     colNames = names(colClasses)
@@ -54,11 +55,16 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
   }
   output = list(chunkProcessor = chunkProcessor, skip = skip + header, levels=list())
 
+  if (!missing(colNames))
+    output$colNames = colNames
+  if (!missing(colClasses))
+    output$colClasses = colClasses
+
   # Construct the connection method
   if (is.function(conMethod)) {
     output$createNewConnection = conMethod
   } else if (inherits(conMethod,"jobj")) {
-    output$createNewConnection = SparkR::textFile(conMethod, description)
+    output$createNewConnection = SparkR::textFile(conMethod, description, minSplits)
   } else {
     description = path.expand(description)
     conMethod = match.arg(conMethod)
@@ -106,9 +112,6 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
       if (is.null(output$levels[[output$colNames[j]]]))
         output$levels[[output$colNames[j]]] = levels(factor(z[,j]))
     }
-  } else {
-    output$colNames = colNames
-    output$colClasses = colClasses
   }
 
   if (length(output$colNames) != length(output$colClasses))
@@ -257,7 +260,7 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
       mf$na.action = na.action
     if (!is.null(offset))
       mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
-    mf[[1L]] <- quote(model.frame)
+    mf[[1L]] <- quote(lm.model.frame)
     mf = eval(mf, parent.frame())
     mt = attr(mf, "terms")
 
