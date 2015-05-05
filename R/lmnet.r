@@ -26,7 +26,9 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
   if (!inherits(data, "adf")) data = as.adf(data)
 
   # Get the standardization information as well as the
-  # lambdas from the data.
+  # lambdas from the data. Note that this will take two passes. One to get
+  # the means, one to get the variances. If you try to do it in a single
+  # pass you start to lose stability.
   if (standardize) {
     stand_info = adf.apply(x=data, type="sparse.model",
       FUN=function(d,passedVars) {
@@ -47,27 +49,56 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         } else {
           sum_w = nrow(d$x)
         }
-        return(list(lambda = Matrix::crossprod(d$x, d$y),
+        return(list(lambda_un_normalized = Matrix::crossprod(d$x, d$y),
                     n = nrow(d$x),
                     sum_w = sum_w,
                     sum_x = Matrix::colSums(d$x),
-                    sum_x_square = Matrix::colSums(d$x^2),
                     sum_y = sum(d$y * d$w),
                     sum_y_squared = sum((d$y * d$w)^2),
                     contrasts=attr(d$x, "contrasts")))
 
       },formula=formula,subset=subset,weights=weights,
         na.action=na.action, offset=offset, contrasts=contrasts)
+
     stand_info = stand_info[!sapply(stand_info, is.null)]
     if (length(stand_info) == 0L) stop("No valid data.")
     data_lambdas = Reduce(`+`, Map(function(x) x$lambda, stand_info))    
     n = Reduce(`+`, Map(function(x) x$n , stand_info))    
     sum_w = Reduce(`+`, Map(function(x) x$sum_w , stand_info))    
     mean_x = Reduce(`+`, Map(function(x) x$sum_x, stand_info)) / n
-    sum_x_square=Reduce(`+`, Map(function(x) x$sum_x_square, stand_info)) 
     sum_y = Reduce(`+`, Map(function(x) x$sum_y, stand_info)) 
     sum_y_squared = Reduce(`+`, Map(function(x) x$sum_y_squared, stand_info)) 
     contrasts=stand_info[[1]]$contrasts
+
+    # Get the standard deviations and then fix the lambdas.
+    stand_info = adf.apply(x=data, type="sparse.model",
+      FUN=function(d,passedVars) {
+        if (nrow(d$x) == 0L) return(NULL)
+        if (!is.null(d$offset)) d$y = d$y - d$offset
+        if (!is.null(d$w)) {
+          if (any(d$w == 0)) {
+            ok = d$w != 0
+            d$w = d$w[ok]
+            d$x = d$x[ok,,drop = FALSE]
+            d$y = d$y[ok]
+            if (!is.null(d$offset)) d$offset = d$offset[ok]
+          }
+          sum_y = sum(d$y * d$w)
+          sum_w = sum(d$w)
+          d$x = d$x * sqrt(d$w)
+          d$y = d$y * sqrt(d$w)
+        } else {
+          sum_w = nrow(d$x)
+        }
+        return(list(x=d$x,
+          square_diff= Matrix::colSums((d$x - 
+            Matrix(mean_x, ncol=ncol(x), nrow=nrow(x), byrow=TRUE))^2)))
+
+      },formula=formula,subset=subset,weights=weights,
+        na.action=na.action, offset=offset, contrasts=contrasts)
+      square_diff = Reduce(`+`, Map(function(x) x$square_diff, stand_info))
+      x_sd = sqrt(square_diff / (n-1))
+
   } else {
     stop("Non-standardized regressors are not yet supported.")
   }
@@ -75,7 +106,7 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
 
   # Rather than checking for a single lambda, this will be changed to 
   # iterate and create a regularization path.
-  if (length(lambda) > 1L) stop("We don't support lambda trajectories yet.")
+  if (length(lambda) > 1L) stop("We don't support lambda paths yet.")
  
   # Next filter out columns
   if (filter[1] == "strong") {
@@ -127,25 +158,25 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
             Matrix(mean_x[active_regressors], ncol=length(active_regressors), 
                    nrow=nrow(d$x), byrow=TRUE)
           # Standardize
-          d$x = Matrix(sqrt(sum_x_square[active_regressors]-
-                            mean_x[active_regressors]^2/n), 
+          d$x = d$x / Matrix(sqrt((sum_x_square[active_regressors]-
+                            mean_x[active_regressors]^2)/n), 
                             ncol=length(active_regressors), 
-                            nrow=nrow(d$x), byrow=TRUE)*d$x
+                            nrow=nrow(d$x), byrow=TRUE)
         } else {
           # TODO: This should be easy to fix.
           stop("Unstandardized not supported")
         }
         return(list(xty = Matrix::crossprod(d$x, d$y),
-                    xtx = Matrix::crossprod(d$x), x=d$x))
+                    xtx = Matrix::crossprod(d$x), x=d$x, y=d$y))
       },formula=formula,subset=subset,weights=weights,
         na.action=na.action, offset=offset, contrasts=contrasts)
     cov_update_info = cov_update_info[!sapply(cov_update_info, is.null)]
     # Fix from here. Double check xty and xtx are correct.
-    stop("here")
     xty = Reduce(`+`, Map(function(x) x$xty, cov_update_info))
     xtx = Reduce(`+`, Map(function(x) x$xtx, cov_update_info))
     ud = xty - xtx %*% beta
     beta = soft_thresh(ud / n + beta, lambda*alpha) / (1 + lambda*(1-alpha))
+    beta[beta < tolerance] = 0.
     it_num = it_num + 1 
   }
   if (it_num > max_it)
