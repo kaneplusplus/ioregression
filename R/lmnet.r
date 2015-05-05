@@ -49,8 +49,7 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         } else {
           sum_w = nrow(d$x)
         }
-        return(list(lambda_un_normalized = Matrix::crossprod(d$x, d$y),
-                    n = nrow(d$x),
+        return(list(n = nrow(d$x),
                     sum_w = sum_w,
                     sum_x = Matrix::colSums(d$x),
                     sum_y = sum(d$y * d$w),
@@ -62,7 +61,6 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
 
     stand_info = stand_info[!sapply(stand_info, is.null)]
     if (length(stand_info) == 0L) stop("No valid data.")
-    data_lambdas = Reduce(`+`, Map(function(x) x$lambda, stand_info))    
     n = Reduce(`+`, Map(function(x) x$n , stand_info))    
     sum_w = Reduce(`+`, Map(function(x) x$sum_w , stand_info))    
     mean_x = Reduce(`+`, Map(function(x) x$sum_x, stand_info)) / n
@@ -90,23 +88,29 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         } else {
           sum_w = nrow(d$x)
         }
+        x_centered=d$x-Matrix(mean_x, ncol=ncol(x), nrow=nrow(x), byrow=TRUE)
         return(list(x=d$x,
-          square_diff= Matrix::colSums((d$x - 
-            Matrix(mean_x, ncol=ncol(x), nrow=nrow(x), byrow=TRUE))^2)))
+          square_diff= Matrix::colSums(x_centered^2),
+          data_lambda_unnormalized=Matrix::crossprod(x_centered, d$y)))
 
       },formula=formula,subset=subset,weights=weights,
         na.action=na.action, offset=offset, contrasts=contrasts)
       square_diff = Reduce(`+`, Map(function(x) x$square_diff, stand_info))
       x_sd = sqrt(square_diff / (n-1))
+      data_lambdas = Reduce(`+`, Map(function(x) x$data_lambda_unnormalized,
+                       stand_info)) / x_sd
 
   } else {
     stop("Non-standardized regressors are not yet supported.")
   }
   lambda_max = max(data_lambdas)
 
+  # TODO: 1. Make sure data lambdas are correct.
+  #       2. Start here.
+
   # Rather than checking for a single lambda, this will be changed to 
   # iterate and create a regularization path.
-  if (length(lambda) > 1L) stop("We don't support lambda paths yet.")
+  if (length(lambda) > 1L) stop("We don't support regularization paths yet.")
  
   # Next filter out columns
   if (filter[1] == "strong") {
