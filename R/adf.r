@@ -37,6 +37,7 @@
 #'                         a dataframe. It must accept four parameters: data,
 #'                         colNames, colClasses, levels. If missing this will
 #'                         be constructed automatically.
+#' @param minSplits an optional paramater for use with SparkR.
 #'
 #' @return An abstract data frame object, which can be used with iolm, ioglm, and
 #'         other related functions.
