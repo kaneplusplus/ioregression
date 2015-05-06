@@ -2,10 +2,16 @@
 # The soft-threshold function
 #
 # @export
-soft_thresh = function(x, gamma) {
-  ret = sign(x) * (abs(x) - gamma)
-  ret[abs(ret) < gamma] = 0
-  ret
+soft_thresh = function(x, g) {
+  x = as.vector(x)
+  w1 = which(g >= abs(x))
+  w2 = which(g < abs(x) & x > 0)
+  w3 = which(g < abs(x) & x < 0)
+  ret = x
+  ret[w1] = 0
+  ret[w2] = x[w2]-g
+  ret[w3] = x[w3]+g
+  Matrix(ret, nrow=length(x))
 }
 
 # The lmnet function
@@ -52,6 +58,7 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         return(list(n = nrow(d$x),
                     sum_w = sum_w,
                     sum_x = Matrix::colSums(d$x),
+                    sum_x_squared = Matrix::colSums(d$x^2),
                     sum_y = sum(d$y * d$w),
                     sum_y_squared = sum((d$y * d$w)^2),
                     contrasts=attr(d$x, "contrasts")))
@@ -66,6 +73,7 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     mean_x = Reduce(`+`, Map(function(x) x$sum_x, stand_info)) / n
     sum_y = Reduce(`+`, Map(function(x) x$sum_y, stand_info)) 
     sum_y_squared = Reduce(`+`, Map(function(x) x$sum_y_squared, stand_info)) 
+    sum_x_squared = Reduce(`+`, Map(function(x) x$sum_x_squared, stand_info)) 
     contrasts=stand_info[[1]]$contrasts
 
     # Get the standard deviations and then fix the lambdas.
@@ -99,27 +107,27 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
       x_sd = sqrt(square_diff / (n-1))
       data_lambdas = Reduce(`+`, Map(function(x) x$data_lambda_unnormalized,
                        stand_info)) / x_sd
+      xty = data_lambdas
 
   } else {
     stop("Non-standardized regressors are not yet supported.")
   }
   lambda_max = max(data_lambdas)
 
-  # TODO: 1. Make sure data lambdas are correct.
-  #       2. Start here.
-
   # Rather than checking for a single lambda, this will be changed to 
   # iterate and create a regularization path.
   if (length(lambda) > 1L) stop("We don't support regularization paths yet.")
  
-  # Next filter out columns
+  # Next filter out columns. Note that the active_regressor variable will
+  # keep track of which variables go into the covariance updating.
   if (filter[1] == "strong") {
     active_regressors = 
       which(as.vector(data_lambdas) > 2*lambda - max(data_lambdas))
   } else if (filter[1] == "safe") {
+    # TODO: we need ||x||_2 and ||y||_2 for this.
     active_regressors = 
       which(as.vector(data_lambdas) > 
-        lambda - sqrt(sum_x_square)*sqrt(sum_y_square)*
+        lambda - sqrt(sum(sum_x_squared))*sqrt(sum(sum_y_squared))*
         (lambda_max - lambda)/lambda_max)
   } else if (filter[1] == "none") {
     active_regressors = 1:length(data_lambdas)
@@ -131,57 +139,51 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
   # Now iterate until we get the slope coefficients. 
   # Note that for now I'm not going to remove unfiltered slope coefficients
   # that go to zero. This could be added.
-  beta = Matrix(1, nrow=length(active_regressors))
+  # Pass through the data to get the covariance update information.
+  cov_update_info = adf.apply(x=data, type="sparse.model",
+    FUN=function(d,passedVars) {
+      d$x = d$x[,active_regressors]
+      if (nrow(d$x) == 0L) return(NULL)
+      if (!is.null(d$offset)) d$y = d$y - d$offset
+      if (!is.null(d$w)) {
+        if (any(d$w == 0)) {
+          ok = d$w != 0
+          d$w = d$w[ok]
+          d$x = d$x[ok,,drop = FALSE]
+          d$y = d$y[ok]
+          if (!is.null(d$offset)) d$offset = d$offset[ok]
+        }
+        d$x = d$x * sqrt(d$w)
+        d$y = d$y * sqrt(d$w)
+      } else {
+        sum_w = nrow(d$x)
+      }
+      if (standardize) {
+        # Center
+        # TODO: pick out the active regressors. Zero the rest.
+        d$x=(d$x-Matrix(mean_x, ncol=ncol(d$x), nrow=nrow(d$x), byrow=TRUE)) /
+          Matrix(x_sd, ncol=ncol(d$x), nrow=nrow(d$x), byrow=TRUE)
+      } else {
+        # TODO: This should be easy to fix.
+        stop("Unstandardized not supported")
+      }
+      return(list(xtx = Matrix::crossprod(d$x)))
+    },formula=formula,subset=subset,weights=weights,
+      na.action=na.action, offset=offset, contrasts=contrasts)
+  cov_update_info = cov_update_info[!sapply(cov_update_info, is.null)]
+  
+  xtx = Reduce(`+`, Map(function(x) x$xtx, cov_update_info))
+  beta = Matrix(1, nrow=nrow(xtx))
   beta_old = -beta
   it_num = 0
   while (it_num <= max_it && 
          as.vector(Matrix::crossprod(beta-beta_old)) > tolerance) {
     beta_old = beta 
-
-    # Pass through the data to get the covariance update information.
-    cov_update_info = adf.apply(x=data, type="sparse.model",
-      FUN=function(d,passedVars) {
-        if (nrow(d$x) == 0L) return(NULL)
-        if (!is.null(d$offset)) d$y = d$y - d$offset
-        if (!is.null(d$w)) {
-          if (any(d$w == 0)) {
-            ok = d$w != 0
-            d$w = d$w[ok]
-            d$x = d$x[ok,,drop = FALSE]
-            d$y = d$y[ok]
-            if (!is.null(d$offset)) d$offset = d$offset[ok]
-          }
-          d$x = d$x * sqrt(d$w)
-          d$y = d$y * sqrt(d$w)
-        } else {
-          sum_w = nrow(d$x)
-        }
-        if (standardize) {
-          # Center
-          d$x = d$x[,active_regressors] - 
-            Matrix(mean_x[active_regressors], ncol=length(active_regressors), 
-                   nrow=nrow(d$x), byrow=TRUE)
-          # Standardize
-          d$x = d$x / Matrix(sqrt((sum_x_square[active_regressors]-
-                            mean_x[active_regressors]^2)/n), 
-                            ncol=length(active_regressors), 
-                            nrow=nrow(d$x), byrow=TRUE)
-        } else {
-          # TODO: This should be easy to fix.
-          stop("Unstandardized not supported")
-        }
-        return(list(xty = Matrix::crossprod(d$x, d$y),
-                    xtx = Matrix::crossprod(d$x), x=d$x, y=d$y))
-      },formula=formula,subset=subset,weights=weights,
-        na.action=na.action, offset=offset, contrasts=contrasts)
-    cov_update_info = cov_update_info[!sapply(cov_update_info, is.null)]
-    # Fix from here. Double check xty and xtx are correct.
-    xty = Reduce(`+`, Map(function(x) x$xty, cov_update_info))
-    xtx = Reduce(`+`, Map(function(x) x$xtx, cov_update_info))
     ud = xty - xtx %*% beta
     beta = soft_thresh(ud / n + beta, lambda*alpha) / (1 + lambda*(1-alpha))
-    beta[beta < tolerance] = 0.
     it_num = it_num + 1 
+    if (sum(beta == 0) >= length(beta) / 2) 
+      beta = suppressWarnings(as(beta, "dgCMatrix"))
   }
   if (it_num > max_it)
     warning("The regression did not converge.")
