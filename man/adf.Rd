@@ -54,9 +54,11 @@ factor levels when needed}
 dataframe. Usually only used without a chunkFormatter.}
 
 \item{chunkFormatter}{an optional function turning the raw connection into
-                        a dataframe. It must accept four parameters: data,
-                        colNames, colClasses, levels. If missing this will
-                        be constructed automatically.}
+a dataframe. It must accept four parameters: data,
+colNames, colClasses, levels. If missing this will
+be constructed automatically.}
+
+\item{minSplits}{an optional paramater for use with SparkR.}
 }
 \value{
 An abstract data frame object, which can be used with iolm, ioglm, and
