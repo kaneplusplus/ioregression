@@ -1,5 +1,5 @@
 
-# The soft-threshold function
+# Soft-threshold a vector of values
 #
 # @export
 soft_thresh = function(x, g) {
@@ -14,7 +14,7 @@ soft_thresh = function(x, g) {
   Matrix(ret, nrow=length(x))
 }
 
-# The lmnet function
+# Fit the lmnet 
 #
 # @export
 lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
