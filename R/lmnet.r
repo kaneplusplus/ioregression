@@ -87,7 +87,7 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         } else {
           sum_w = nrow(d$x)
         }
-        return(list(n = nrow(d$x),
+        return(list(num_rows = nrow(d$x),
                     sum_w = sum_w,
                     sum_x = Matrix::colSums(d$x),
                     sum_x_squared = Matrix::colSums(d$x^2),
@@ -99,11 +99,11 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         na.action=na.action, offset=offset, contrasts=contrasts)
     stand_info = stand_info[!sapply(stand_info, is.null)]
     if (length(stand_info) == 0L) stop("No valid data.")
-    n = Reduce(`+`, Map(function(x) x$n , stand_info))    
+    num_rows = Reduce(`+`, Map(function(x) x$num_rows, stand_info))    
     sum_w = Reduce(`+`, Map(function(x) x$sum_w , stand_info))    
-    mean_x = Reduce(`+`, Map(function(x) x$sum_x, stand_info)) / n
+    mean_x = Reduce(`+`, Map(function(x) x$sum_x, stand_info)) / num_rows
     sum_y = Reduce(`+`, Map(function(x) x$sum_y, stand_info)) 
-    mean_y = sum_y / n
+    mean_y = sum_y / num_rows
     sum_x_squared = Reduce(`+`, Map(function(x) x$sum_x_squared, stand_info)) 
     contrasts=stand_info[[1]]$contrasts
     all_var_names = stand_info[[1]]$all_var_names
@@ -139,14 +139,14 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
       },formula=formula,subset=subset,weights=weights,
         na.action=na.action, offset=offset, contrasts=contrasts)
       x_square_diff = Reduce(`+`, Map(function(x) x$x_square_diff, stand_info))
-      x_sd = sqrt(x_square_diff / (n-1))
+      x_sd = sqrt(x_square_diff / (num_rows-1))
       y_square_diff = Reduce(`+`, Map(function(x) x$y_square_diff, stand_info))
-      y_sd = sqrt(y_square_diff / (n-1))
+      y_sd = sqrt(y_square_diff / (num_rows-1))
       xty = Reduce(`+`, Map(function(x) x$xty, stand_info)) / x_sd / y_sd
   } else {
     stop("Non-standardized regressors are not yet supported.")
   }
-  data_lambdas = abs(xty) / n / alpha
+  data_lambdas = abs(xty) / num_rows / alpha
   lambda_k = max(abs(data_lambdas))
   if (is.null(lambda)) {
     lambda_path = seq(from=lambda_k, to=lambda_epsilon*lambda_k, 
@@ -161,7 +161,6 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
       active_regressors = 
         which(as.vector(data_lambdas) > 2*lambda - lambda_k)
     } else if (filter[1] == "safe") {
-      # TODO: we need ||x||_2 and ||y||_2 for this.
       active_regressors = 
         which(as.vector(data_lambdas) > 
           lambda - sqrt(sum(x_square_diff))*sqrt(sum(y_square_diff))*
@@ -179,7 +178,6 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     cov_update_info = adf.apply(x=data, type="sparse.model",
       FUN=function(d,passedVars) {
         d$x = d$x[,active_regressors, drop=FALSE]
-        print(d$x)
         if (nrow(d$x) == 0L) return(NULL)
         if (!is.null(d$offset)) d$y = d$y - d$offset
         if (!is.null(d$w)) {
@@ -221,7 +219,8 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
              as.vector(Matrix::crossprod(beta-beta_old)) > tolerance) {
         beta_old = beta 
         ud = xty[active_regressors,,drop=FALSE] - xtx %*% beta
-        beta = soft_thresh(ud / n + beta, lambda*alpha) / (1 + lambda*(1-alpha))
+        beta = soft_thresh(ud / num_rows + beta, lambda*alpha) / 
+          (1 + lambda*(1-alpha))
         it_num = it_num + 1 
         if (sum(beta == 0) >= length(beta) / 2) 
           beta = suppressWarnings(as(beta, "dgCMatrix"))
