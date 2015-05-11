@@ -14,13 +14,45 @@ soft_thresh = function(x, g) {
   Matrix(ret, nrow=length(x))
 }
 
-# Fit the lmnet 
-#
-# @export
+#' Fit a linear model with lasso or elasticnet regularization
+#'
+#' Fit a linear model via penalized maxiumum likelihood.
+#' The regularization path is computed for the lasso or elasticnet
+#' penalty at a grid of values for the regularization parameter
+#' lambda. Can deal data frames or abstract data frames.
+#' @param formula the formulat for the regression
+#' @param data an abstract data frame or something that can be coerced into one.
+#' @param subset an options character string, which will be evaluated in the
+#' frame of the data, to indicate which rows to include in the analysis
+#' @param weights a optional character string, which will be evaluated in the
+#' frame of the data, giving the sample weights for the
+#' regression.
+#' @param na.action a function which indicates what should happen when the data
+#' contain 'NA's. See lm.fit for more details.
+#' @param offset a optional character string, which will be evaluated in the
+#' frame of the data, giving the offsets for the regression
+#' @param alpha the elasticnet mixing parameter 0 <= alpha <= 1.
+#' @param lambda a user supplied value (or sequence of values) for the penalty
+#' parameter. If not specified then a regularization path is created based
+#' on the data.
+#' @param contrasts contrasts to use with the regression. See the
+#' ‘contrasts.arg’ of ‘model.matrix.default’
+#' @param standardize should the regression variables be normalized to have
+#' mean zero and standard deviation one?
+#' @param tol numeric tolerance.
+#' @param max_it the maximum number of iterations per regression.
+#' @param filter should filtering rules be used to remove variables that will
+#' not be needed in the regression? Default is strong corresponding to
+#' http://www-stat.stanford.edu/~tibs/ftp/strong.pdf.
+#' @param lambda_epsilon this value is multiplied by the max lambda in the
+#' data to determine the minimum lambda when the regularization path is
+#' determined from the data. This is ignored when lambda is specified.
+#' @param nlambdas the number of lambdas to be generated in the regularization
+#' path. This is ignored when lambda is specified.
+#' @export
 lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
                  offset=NULL, alpha=1, lambda=NULL, contrasts=NULL,
-                 lambda.min.ratio=ifelse(nobs < nvars, 0.01, 1e-04),
-                 standardize=TRUE, tolerance=1e-7, dfmax=nvars + 1, 
+                 standardize=TRUE, tolerance=1e-7, 
                  max_it = 1e+05, filter=c("strong", "safe", "none"),
                  lambda_epsilon=0.0001, nlambdas=100) {
 

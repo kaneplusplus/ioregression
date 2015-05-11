@@ -17,5 +17,4 @@ x = x - matrix(data=col_means, ncol=ncol(x), nrow=nrow(x), byrow=TRUE)
 col_sd = apply(x, 2, sd)
 x = x / matrix(data=col_sd, ncol=ncol(x), nrow=nrow(x), byrow=TRUE)
 y = (y-mean(y)) / sd(y)
-
 glmnet(x, y, lambda = lambda, alpha=alpha)$beta
