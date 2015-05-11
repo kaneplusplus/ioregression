@@ -10,7 +10,7 @@ names(df) = gsub("V", "X", names(df))
 lambda=0.1
 alpha=0.5
 
-lmnet(Y ~ .-1, df, lambda=lambda, alpha=alpha)
+iolmnet(Y ~ .-1, df, lambda=lambda, alpha=alpha)
 
 col_means = colMeans(x)
 x = x - matrix(data=col_means, ncol=ncol(x), nrow=nrow(x), byrow=TRUE)

@@ -50,7 +50,7 @@ soft_thresh = function(x, g) {
 #' @param nlambdas the number of lambdas to be generated in the regularization
 #' path. This is ignored when lambda is specified.
 #' @export
-lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
+iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
                  offset=NULL, alpha=1, lambda=NULL, contrasts=NULL,
                  standardize=TRUE, tolerance=1e-7, 
                  max_it = 1e+05, filter=c("strong", "safe", "none"),
