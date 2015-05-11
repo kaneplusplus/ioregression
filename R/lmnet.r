@@ -61,7 +61,8 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
                     sum_x_squared = Matrix::colSums(d$x^2),
                     sum_y = sum(d$y * d$w),
                     sum_y_squared = sum((d$y * d$w)^2),
-                    contrasts=attr(d$x, "contrasts")))
+                    contrasts=attr(d$x, "contrasts"),
+                    all_var_names = colnames(d$x)))
 
       },formula=formula,subset=subset,weights=weights,
         na.action=na.action, offset=offset, contrasts=contrasts)
@@ -75,6 +76,7 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     sum_y_squared = Reduce(`+`, Map(function(x) x$sum_y_squared, stand_info)) 
     sum_x_squared = Reduce(`+`, Map(function(x) x$sum_x_squared, stand_info)) 
     contrasts=stand_info[[1]]$contrasts
+    all_var_names = stand_info[[1]]$all_var_names
 
     # Get the standard deviations and then fix the lambdas.
     stand_info = adf.apply(x=data, type="sparse.model",
@@ -187,6 +189,10 @@ lmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
   }
   if (it_num > max_it)
     warning("The regression did not converge.")
-  beta
+  list(beta=beta, cn=colnames(xtx))
+  beta_ret = Matrix(0, ncol=1, nrow=(length(all_var_names)), 
+    dimnames=list(all_var_names, NULL))
+  beta_ret[colnames(xtx),1] = beta
+  beta_ret
 }
 

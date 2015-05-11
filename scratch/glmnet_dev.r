@@ -5,7 +5,7 @@ data("QuickStartExample")
 
 df = as.data.frame(x)
 df$Y = as.vector(y)
-names(df) = gsub("V", "X", names(df))
+names(df) = gsub("V", "B", names(df))
 
 # Standardize.
 col_means = colMeans(x)
