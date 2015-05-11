@@ -8,7 +8,6 @@ Maintainer: Michael J. Kane <kaneplusplus@gmail.com>
 Description: This package implements out-of-core regression
   routines (OLS, GLM, LARS, Ridge) and can be used with any input
   implemented as an R connection.
-Depends: iotools, lars
-Imports: Matrix
+Depends: iotools, lars, Matrix
 Suggests: testthat
 License: file LICENSE
