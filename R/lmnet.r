@@ -128,7 +128,7 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         } else {
           sum_w = nrow(d$x)
         }
-        x_centered=d$x-Matrix(mean_x, ncol=ncol(x), nrow=nrow(x), byrow=TRUE)
+        x_centered=d$x-Matrix(mean_x,ncol=ncol(d$x), nrow=nrow(d$x), byrow=TRUE)
         y_centered=d$y-mean_y
         return(list(x=d$x,
           x_square_diff= Matrix::colSums(x_centered^2),
