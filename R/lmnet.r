@@ -156,6 +156,40 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
   }
   beta_path = NULL
   lambda = c()
+
+  cov_update_info = adf.apply(x=data, type="sparse.model",
+    FUN=function(d,passedVars) {
+      #d$x = d$x[,active_regressors, drop=FALSE]
+      if (nrow(d$x) == 0L) return(NULL)
+      if (!is.null(d$offset)) d$y = d$y - d$offset
+      if (!is.null(d$w)) {
+        if (any(d$w == 0)) {
+          ok = d$w != 0
+          d$w = d$w[ok]
+          d$x = d$x[ok,,drop = FALSE]
+          d$y = d$y[ok]
+          if (!is.null(d$offset)) d$offset = d$offset[ok]
+        }
+        d$x = d$x * sqrt(d$w)
+        d$y = d$y * sqrt(d$w)
+      } else {
+        sum_w = nrow(d$x)
+      }
+      if (standardize) {
+        d$x=(d$x-Matrix(mean_x, 
+             ncol=ncol(d$x), nrow=nrow(d$x), byrow=TRUE)) /
+             Matrix(x_sd, ncol=ncol(d$x), nrow=nrow(d$x), 
+                    byrow=TRUE)
+        d$y = (d$y - mean_y) / y_sd
+      } else {
+        stop("Unstandardized not supported")
+      }
+      return(list(xtx = Matrix::crossprod(d$x)))
+    },formula=formula,subset=subset,weights=weights,
+      na.action=na.action, offset=offset, contrasts=contrasts)
+  cov_update_info = cov_update_info[!sapply(cov_update_info, is.null)]
+  xtx_all = Reduce(`+`, Map(function(x) x$xtx, cov_update_info))
+
   for(lambda in lambda_path) {
     if (filter[1] == "strong") {
       active_regressors = 
@@ -170,47 +204,8 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     } else {
       stop("Unsupported filter type.")
     }
-
-    # Now iterate until we get the slope coefficients. 
-    # Note that for now I'm not going to remove unfiltered slope coefficients
-    # that go to zero. This could be added.
-    # Pass through the data to get the covariance update information.
-    cov_update_info = adf.apply(x=data, type="sparse.model",
-      FUN=function(d,passedVars) {
-        d$x = d$x[,active_regressors, drop=FALSE]
-        if (nrow(d$x) == 0L) return(NULL)
-        if (!is.null(d$offset)) d$y = d$y - d$offset
-        if (!is.null(d$w)) {
-          if (any(d$w == 0)) {
-            ok = d$w != 0
-            d$w = d$w[ok]
-            d$x = d$x[ok,,drop = FALSE]
-            d$y = d$y[ok]
-            if (!is.null(d$offset)) d$offset = d$offset[ok]
-          }
-          d$x = d$x * sqrt(d$w)
-          d$y = d$y * sqrt(d$w)
-        } else {
-          sum_w = nrow(d$x)
-        }
-        if (standardize) {
-          # Center
-          # TODO: pick out the active regressors. Zero the rest.
-          d$x=(d$x-Matrix(mean_x[active_regressors], 
-               ncol=ncol(d$x), nrow=nrow(d$x), byrow=TRUE)) /
-               Matrix(x_sd[active_regressors], ncol=ncol(d$x), nrow=nrow(d$x), 
-                      byrow=TRUE)
-          d$y = (d$y - mean_y) / y_sd
-        } else {
-          # TODO: This should be easy to fix.
-          stop("Unstandardized not supported")
-        }
-        return(list(xtx = Matrix::crossprod(d$x)))
-      },formula=formula,subset=subset,weights=weights,
-        na.action=na.action, offset=offset, contrasts=contrasts)
-    cov_update_info = cov_update_info[!sapply(cov_update_info, is.null)]
-   
-    xtx = Reduce(`+`, Map(function(x) x$xtx, cov_update_info))
+    xtx = xtx_all[active_regressors,]
+    xtx = xtx_all[,active_regressors]
     if (nrow(xtx) > 0) {
       beta = Matrix(1, nrow=nrow(xtx))
       beta_old = -beta
