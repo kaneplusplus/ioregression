@@ -205,9 +205,9 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
       stop("Unsupported filter type.")
     }
     xtx = xtx_all[active_regressors,]
-    xtx = xtx_all[,active_regressors]
+    xtx = xtx[,active_regressors]
     if (nrow(xtx) > 0) {
-      beta = Matrix(1, nrow=nrow(xtx))
+      beta = Matrix(1, nrow=nrow(xtx), ncol=1)
       beta_old = -beta
       it_num = 0
       while (it_num <= max_it && 
