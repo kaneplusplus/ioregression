@@ -190,6 +190,7 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
   cov_update_info = cov_update_info[!sapply(cov_update_info, is.null)]
   xtx_all = Reduce(`+`, Map(function(x) x$xtx, cov_update_info))
 
+  # The following could be parallelized.
   for(lambda in lambda_path) {
     if (filter[1] == "strong") {
       active_regressors = 
@@ -204,8 +205,8 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     } else {
       stop("Unsupported filter type.")
     }
-    xtx = xtx_all[active_regressors,]
-    xtx = xtx[,active_regressors]
+    xtx = xtx_all[active_regressors,,drop=FALSE]
+    xtx = xtx[,active_regressors,drop=FALSE]
     if (nrow(xtx) > 0) {
       beta = Matrix(1, nrow=nrow(xtx), ncol=1)
       beta_old = -beta
