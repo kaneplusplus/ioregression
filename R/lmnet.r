@@ -128,13 +128,13 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         } else {
           sum_w = nrow(d$x)
         }
-        x_centered=d$x-Matrix(mean_x,ncol=ncol(d$x), nrow=nrow(d$x), byrow=TRUE)
+        x_bar = Matrix(mean_x,ncol=ncol(d$x), nrow=nrow(d$x), byrow=TRUE)
+        x_centered=d$x-x_bar
         y_centered=d$y-mean_y
         return(list(x=d$x,
           x_square_diff= Matrix::colSums(x_centered^2),
           y_square_diff= sum(y_centered^2),
-          xty=
-            Matrix::crossprod(x_centered, y_centered)))
+          centered_xty= Matrix::crossprod(x_centered, y_centered)))
 
       },formula=formula,subset=subset,weights=weights,
         na.action=na.action, offset=offset, contrasts=contrasts)
@@ -142,11 +142,12 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
       x_sd = sqrt(x_square_diff / (num_rows-1))
       y_square_diff = Reduce(`+`, Map(function(x) x$y_square_diff, stand_info))
       y_sd = sqrt(y_square_diff / (num_rows-1))
-      xty = Reduce(`+`, Map(function(x) x$xty, stand_info)) / x_sd / y_sd
+      normalized_xty = Reduce(`+`, 
+        Map(function(x) x$centered_xty, stand_info)) / x_sd / y_sd
   } else {
     stop("Non-standardized regressors are not yet supported.")
   }
-  data_lambdas = abs(xty) / num_rows / alpha
+  data_lambdas = abs(normalized_xty) / num_rows / alpha
   lambda_k = max(abs(data_lambdas))
   if (is.null(lambda)) {
     lambda_path = seq(from=lambda_k, to=lambda_epsilon*lambda_k, 
@@ -190,6 +191,9 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
   cov_update_info = cov_update_info[!sapply(cov_update_info, is.null)]
   xtx_all = Reduce(`+`, Map(function(x) x$xtx, cov_update_info))
 
+  # Note that we'll need to do something with the a0 when we're not 
+  # standardizing. For now they are 0.
+  a0 = c()
   # The following could be parallelized.
   for(lambda in lambda_path) {
     if (filter[1] == "strong") {
@@ -214,7 +218,7 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
       while (it_num <= max_it && 
              as.vector(Matrix::crossprod(beta-beta_old)) > tolerance) {
         beta_old = beta 
-        ud = xty[active_regressors,,drop=FALSE] - xtx %*% beta
+        ud = normalized_xty[active_regressors,,drop=FALSE] - xtx %*% beta
         beta = soft_thresh(ud / num_rows + beta, lambda*alpha) / 
           (1 + lambda*(1-alpha))
         it_num = it_num + 1 
@@ -235,7 +239,8 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     } else {
       beta_path = cbind(beta_path, beta_ret)
     }
+    a0 = c(a0, mean_y)
   }
-  list(beta=beta_path, lambda = lambda_path)
+  list(call=call, a0=a0, beta=beta_path, lambda = lambda_path)
 }
 
