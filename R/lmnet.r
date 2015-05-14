@@ -89,8 +89,8 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         }
         return(list(num_rows = nrow(d$x),
                     sum_w = sum_w,
-                    sum_x = Matrix::colSums(d$x),
-                    sum_x_squared = Matrix::colSums(d$x^2),
+                    col_sum_x = Matrix::colSums(d$x),
+                    col_sum_x_squared = Matrix::colSums(d$x^2),
                     sum_y = sum(d$y),
                     contrasts=attr(d$x, "contrasts"),
                     all_var_names = colnames(d$x)))
@@ -101,10 +101,12 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     if (length(stand_info) == 0L) stop("No valid data.")
     num_rows = Reduce(`+`, Map(function(x) x$num_rows, stand_info))    
     sum_w = Reduce(`+`, Map(function(x) x$sum_w , stand_info))    
-    mean_x = Reduce(`+`, Map(function(x) x$sum_x, stand_info)) / num_rows
+    col_mean_x = Reduce(`+`, 
+      Map(function(x) x$col_sum_x, stand_info)) / num_rows
     sum_y = Reduce(`+`, Map(function(x) x$sum_y, stand_info)) 
     mean_y = sum_y / num_rows
-    sum_x_squared = Reduce(`+`, Map(function(x) x$sum_x_squared, stand_info)) 
+    col_sum_x_squared = Reduce(`+`, 
+      Map(function(x) x$col_sum_x_squared, stand_info)) 
     contrasts=stand_info[[1]]$contrasts
     all_var_names = stand_info[[1]]$all_var_names
 
@@ -128,18 +130,19 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         } else {
           sum_w = nrow(d$x)
         }
-        x_bar = Matrix(mean_x,ncol=ncol(d$x), nrow=nrow(d$x), byrow=TRUE)
+        x_bar = Matrix(col_mean_x,ncol=ncol(d$x), nrow=nrow(d$x), byrow=TRUE)
         x_centered=d$x-x_bar
         y_centered=d$y-mean_y
         return(list(x=d$x,
-          x_square_diff= Matrix::colSums(x_centered^2),
+          col_x_square_diff= Matrix::colSums(x_centered^2),
           y_square_diff= sum(y_centered^2),
           centered_xty= Matrix::crossprod(x_centered, y_centered)))
 
       },formula=formula,subset=subset,weights=weights,
         na.action=na.action, offset=offset, contrasts=contrasts)
-      x_square_diff = Reduce(`+`, Map(function(x) x$x_square_diff, stand_info))
-      x_sd = sqrt(x_square_diff / (num_rows-1))
+      col_x_square_diff = 
+        Reduce(`+`, Map(function(x) x$col_x_square_diff, stand_info))
+      x_sd = sqrt(col_x_square_diff / (num_rows-1))
       y_square_diff = Reduce(`+`, Map(function(x) x$y_square_diff, stand_info))
       y_sd = sqrt(y_square_diff / (num_rows-1))
       normalized_xty = Reduce(`+`, 
@@ -177,7 +180,7 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
         sum_w = nrow(d$x)
       }
       if (standardize) {
-        d$x=(d$x-Matrix(mean_x, 
+        d$x=(d$x-Matrix(col_mean_x, 
              ncol=ncol(d$x), nrow=nrow(d$x), byrow=TRUE)) /
              Matrix(x_sd, ncol=ncol(d$x), nrow=nrow(d$x), 
                     byrow=TRUE)
@@ -202,7 +205,7 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     } else if (filter[1] == "safe") {
       active_regressors = 
         which(as.vector(data_lambdas) > 
-          lambda - sqrt(sum(x_square_diff))*sqrt(sum(y_square_diff))*
+          lambda - sqrt(sum(col_x_square_diff))*sqrt(sum(y_square_diff))*
           (lambda_k - lambda)/lambda_k)
     } else if (filter[1] == "none") {
       active_regressors = 1:length(data_lambdas)
