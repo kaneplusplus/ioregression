@@ -21,7 +21,6 @@ iolm.ridge = function(object, lambda=seq(0,1,by=0.1), normalize=TRUE) {
   noms = names(object$coefficients)
   intercept = as.logical(attr(object$terms, "intercept"))
 
-
   XtY = object$xty
   XtX = object$xtx
   YtY = object$yty
