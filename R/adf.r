@@ -255,6 +255,7 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
       df = df[subset,]
     }
 
+    IO_OFFSET = IO_WEIGHTS = NULL # to silence NOTES from R CMD CHECK
     environment(formula) = parent.frame()
     if (is.null(weights) && is.null(offset)) {
       mf = model.frame(formula=formula, data=df)

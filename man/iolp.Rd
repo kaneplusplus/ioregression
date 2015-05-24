@@ -2,7 +2,7 @@
 % Please edit documentation in R/lp.r
 \name{iolp}
 \alias{iolp}
-\title{Fit a robust linear regression}
+\title{Fit an Lp Regression}
 \usage{
 iolp(formula, data, p = 1.5, weights = NULL, subset = NULL,
   na.action = NULL, offset = NULL, contrasts = NULL, beta_init = NULL,
@@ -13,6 +13,10 @@ iolp(formula, data, p = 1.5, weights = NULL, subset = NULL,
 
 \item{data}{an abstract data frame, or something which can be
 coerced to one.}
+
+\item{p}{value of p for the regression, such that 1 <= p < 2.
+Using p=2 is also allowed for testing purposes, but
+sub-optimal as iolm should instead be called directly.}
 
 \item{weights}{a optional character string, which will be evaluated in the
 frame of the data, giving the sample weights for the regression}
@@ -30,23 +34,20 @@ frame of the data, giving the offsets for the regression}
 \item{contrasts}{contrasts to use with the regression. See the \code{contrasts.arg}
 of \code{model.matrix.default}}
 
+\item{beta_init}{initial beta vector to start at; when missing an first pass using
+iolm is run to determine the starting point.}
+
+\item{delta}{tuning parameter to provide weights for very small residuals.
+most users should not need to change this parameter.}
+
 \item{maxit}{the limit on the number of IWLS iterations.}
 
 \item{acc}{accuracy for the IWLS stopping criterion.}
 
 \item{tol}{numeric tolerance. Set to -1 to ignore.}
-
-\item{a}{tuning parameter for Tukey bisquare. See Details for more information.}
 }
 \description{
-Fits an M-estimator using Tukey's bisquare function for
-estimating slope coefficients in a linear model.
-}
-\details{
-The parameter \code{a} controls the tradeoff between efficency
-and robustness. The default value of 4.685 yields an efficency of 95%
-but breakdown point of about 10%; conversely 1.547 has only a 28% efficency
-but a breakdown point of 50%. For large datasets, it may be preferable to set
-the values of \code{a} lower than the default.
+Minimizes the loss ||Y - Xb||_p, for a suitable choice
+of p.
 }
 
