@@ -1,14 +1,11 @@
-#' Fit an Lp Regression
+#' Fit a robust linear regression
 #'
-#' Minimizes the loss ||Y - Xb||_p, for a suitable choice
-#' of p.
+#' Fits an M-estimator using Tukey's bisquare function for
+#' estimating slope coefficients in a linear model.
 #'
 #' @param formula     the formula for the regression
 #' @param data        an abstract data frame, or something which can be
 #'                     coerced to one.
-#' @param p           value of p for the regression, such that 1 <= p < 2.
-#'                     Using p=2 is also allowed for testing purposes, but
-#'                     sub-optimal as iolm should instead be called directly.
 #' @param weights     a optional character string, which will be evaluated in the
 #'                     frame of the data, giving the sample weights for the regression
 #' @param subset      an options character string, which will be evaluated in the
@@ -20,45 +17,57 @@
 #'                     frame of the data, giving the offsets for the regression
 #' @param contrasts   contrasts to use with the regression. See the \code{contrasts.arg}
 #'                     of \code{model.matrix.default}
-#' @param beta_init   initial beta vector to start at; when missing an first pass using
+#' @param beta_init   initial beta vector to start at; when missing a first pass using
 #'                     iolm is run to determine the starting point.
-#' @param delta       tuning parameter to provide weights for very small residuals.
-#'                     most users should not need to change this parameter.
+#' @param s_init      inital value of the scale factor; when missing a first pass using
+#'                     iolm is run to determine the starting scale.
+#' @param a           tuning parameter for Tukey bisquare. See Details for more information.
 #' @param maxit       the limit on the number of IWLS iterations.
 #' @param acc         accuracy for the IWLS stopping criterion.
 #' @param tol         numeric tolerance. Set to -1 to ignore.
+#' @details
+#' The parameter \code{a} controls the tradeoff between efficency
+#' and robustness. The default value of 4.685 yields an efficency of 95%
+#' but breakdown point of about 10%; conversely 1.547 has only a 28% efficency
+#' but a breakdown point of 50%. For large datasets, it may be preferable to set
+#' the values of \code{a} lower than the default.
+#'
 #' @export
-iolp = function(formula, data, p=1.5, weights=NULL, subset=NULL,
+iorlm = function(formula, data, weights=NULL, subset=NULL,
                 na.action=NULL, offset=NULL, contrasts=NULL,
-                beta_init=NULL, delta=0.0001, maxit=20, acc=1e-5, tol=-1) {
+                beta_init=NULL, s_init=NULL, a=4.685, maxit = 20,
+                acc = 1e-4, tol=-1) {
   call <- match.call()
 
-  if (p > 2 || p < 1) stop("")
   if (!inherits(data, "adf")) data = as.adf(data)
 
-  if (is.null(beta_init)) {
+  if (is.null(beta_init) || is.null(s_init))
     lm.out = iolm(formula, data, subset=subset, weights=weights,
                     na.action=na.action, offset=offset, contrasts=NULL,
                     tol=tol)
-    beta = beta_old = as.numeric(lm.out$coefficients)
-  } else beta = beta_old = beta_init
+
+  beta <- if (is.null(beta_init)) as.numeric(lm.out$coefficients) else beta_init
+  s <- if (is.null(s_init)) summary(lm.out)$sigma else s_init
+  beta_old = beta
 
   converged=FALSE
   for (i in 1:maxit) {
-    pvar = list(beta=beta, p=p, delta=delta)
+    pvar = list(beta=beta, a=a, s=s)
     cvs = adf.apply(x=data, type="sparse.model",
-                    FUN=lp_kernel, passedVars=pvar, formula=formula,
-                    subset=subset, weights=weights, na.action=na.action,
+                    FUN=rlm_kernel ,passedVars=pvar, formula=formula,
+                    subset=subset,weights=weights, na.action=na.action,
                     offset=offset, contrasts=contrasts)
     cvs = cvs[!sapply(cvs,is.null)]
 
-
     XTWX = Reduce(`+`, Map(function(x) x$XTWX, cvs))
     XTWz = Reduce(`+`, Map(function(x) x$XTWz, cvs))
+    resid20 = unlist(Map(function(x) x$resid20, cvs))
+
+    s = median(abs(resid20 - median(resid20))) * 1.4826
 
     beta = Matrix::solve(XTWX, XTWz, tol=2*.Machine$double.eps)
     if (!is.null(beta_old) &&
-        as.vector(Matrix::crossprod(beta-beta_old) / sum(beta_old^2 + delta)) < acc) {
+        as.vector(Matrix::crossprod(beta-beta_old) / sum(beta_old^2)) < acc) {
       converged=TRUE
       break
     }
@@ -73,23 +82,24 @@ iolp = function(formula, data, p=1.5, weights=NULL, subset=NULL,
     xtwx=XTWX,
     xtwz=XTWz,
     iter=i,
-    p=p,
+    a=a,
+    s=s,
     converged=converged,
     formula=formula,
     call=call,
     num_obs=nobs)
-  class(ret) = c("iolp")
+  class(ret) = c("iorlm")
   ret
 }
 
-#' Print iolp object
+#' Print iorlm object
 #'
-#' @method print iolp
-#' @param x        output of iolp
+#' @method print iorlm
+#' @param x        output of iorlm
 #' @param digits   significant digits to print
 #' @param ...      optional, currently unused, arguments
 #' @export
-print.iolp =
+print.iorlm =
 function (x, digits = max(3L, getOption("digits") - 3L), ...)
 {
     cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),
@@ -104,7 +114,7 @@ function (x, digits = max(3L, getOption("digits") - 3L), ...)
     invisible(x)
 }
 
-lp_kernel = function(d, passedVars=NULL) {
+rlm_kernel = function(d, passedVars=NULL) {
   if (nrow(d$x) == 0L) return(NULL)
   if (!is.null(d$w)) {
     if (any(d$w == 0)) {
@@ -118,17 +128,22 @@ lp_kernel = function(d, passedVars=NULL) {
   nobs = length(d$y)
   offset <- if (!is.null(d$offset)) d$offset else offset = rep.int(0,nobs)
   weights <- if (!is.null(d$w)) d$w else rep(1, nobs)
-  p <- if (!is.null(passedVars$a)) passedVars$a else 1.5
-  delta <- if (!is.null(passedVars$s)) passedVars$s else 0.0001
+  a <- if (!is.null(passedVars$a)) passedVars$a else 4.685
+  s <- if (!is.null(passedVars$s)) passedVars$s else 1.0
+
+  tbw = function(z, a) {
+    out = (1 - (z/a)^2)^2
+    out[abs(z) > a] = 0
+    out
+  }
 
   r = (d$x %*% passedVars$beta + offset - d$y)
-  Winv = abs(r)^(2-passedVars$p)
-  Winv[Winv < passedVars$delta] = passedVars$delta
-  W = as.vector(weights * 1/Winv)
+  W = as.vector(weights * as.numeric(tbw(r / s, a = a)))
 
-  list(XTWX=Matrix::crossprod(d$x, W*d$x),
+  list(XTWX=Matrix::crossprod(d$x, W * d$x),
        XTWz=Matrix::crossprod(d$x, W*d$y),
        cumulative_weight=sum(d$w),
        nobs=nobs,
-       wy=Matrix::crossprod(sqrt(weights), d$y))
+       wy=Matrix::crossprod(sqrt(weights), d$y),
+       resid20=quantile(r,seq(0,1,0.05)))
 }
