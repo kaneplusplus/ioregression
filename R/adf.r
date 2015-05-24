@@ -65,7 +65,7 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
   if (is.function(conMethod)) {
     output$createNewConnection = conMethod
   } else if (inherits(conMethod,"jobj")) {
-    output$createNewConnection = SparkR::textFile(conMethod, description, minSplits)
+    # output$createNewConnection = SparkR::textFile(conMethod, description, minSplits)
   } else {
     description = path.expand(description)
     conMethod = match.arg(conMethod)
@@ -77,9 +77,9 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
               length(setdiff(colNames[colClasses %in% c("character", "factor")],names(levels))))
   if (needHead) {
     if (inherits(output$createNewConnection, "RDD")) {
-      rows = SparkR::lapplyPartition(output$createNewConnection, function(z) head(z,n=nrowsClasses))
-      rows = SparkR::collect(rows)
-      rows = as.vector(rows, mode="character")
+      # rows = SparkR::lapplyPartition(output$createNewConnection, function(z) head(z,n=nrowsClasses))
+      # rows = SparkR::collect(rows)
+      # rows = as.vector(rows, mode="character")
     } else {
       on.exit(close(con))
       if (is.function(output$createNewConnection)) {
@@ -284,8 +284,8 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
   }
 
   if (inherits(x$createNewConnection, "RDD")) {
-    output = SparkR::lapplyPartition(x$createNewConnection, function(z) list(FUN2(z)))
-    output = SparkR::collect(output)
+    # output = SparkR::lapplyPartition(x$createNewConnection, function(z) list(FUN2(z)))
+    # output = SparkR::collect(output)
   } else {
     on.exit(close(con))
     if (is.function(x$createNewConnection)) {

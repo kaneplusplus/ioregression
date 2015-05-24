@@ -6,7 +6,7 @@
 \usage{
 ioglm(formula, family = gaussian, data, weights = NULL, subset = NULL,
   na.action = NULL, start = NULL, etastart, mustart, offset = NULL,
-  control = list(), contrasts = NULL, tol = -1)
+  control = list(), contrasts = NULL, trace = FALSE, tol = -1)
 }
 \arguments{
 \item{formula}{the formula for the regression}
@@ -42,6 +42,9 @@ frame of the data, giving the offsets for the regression}
 
 \item{contrasts}{contrasts to use with the regression. See the \code{contrasts.arg}
 of \code{model.matrix.default}}
+
+\item{trace}{logical indicating if output should be produced for each
+iteration.}
 
 \item{tol}{numeric tolerance. Set to -1 to ignore.}
 }

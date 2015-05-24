@@ -3,6 +3,7 @@
 #' Minimizes the loss ||Y - Xb||_p, for a suitable choice
 #' of p.
 #'
+#' @importFrom       Matrix crossprod
 #' @param formula     the formula for the regression
 #' @param data        an abstract data frame, or something which can be
 #'                     coerced to one.

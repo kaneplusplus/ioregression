@@ -6,7 +6,7 @@
 \usage{
 iorlm(formula, data, weights = NULL, subset = NULL, na.action = NULL,
   offset = NULL, contrasts = NULL, beta_init = NULL, s_init = NULL,
-  a = 4.685, maxit = 20, acc = 1e-04, tol = -1)
+  a = 4.685, maxit = 20, acc = 1e-04, trace = FALSE, tol = -1)
 }
 \arguments{
 \item{formula}{the formula for the regression}
@@ -41,6 +41,9 @@ iolm is run to determine the starting scale.}
 \item{maxit}{the limit on the number of IWLS iterations.}
 
 \item{acc}{accuracy for the IWLS stopping criterion.}
+
+\item{trace}{logical indicating if output should be produced for each
+iteration.}
 
 \item{tol}{numeric tolerance. Set to -1 to ignore.}
 }

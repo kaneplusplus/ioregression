@@ -6,7 +6,7 @@
 \usage{
 iolp(formula, data, p = 1.5, weights = NULL, subset = NULL,
   na.action = NULL, offset = NULL, contrasts = NULL, beta_init = NULL,
-  delta = 1e-04, maxit = 20, acc = 1e-05, tol = -1)
+  delta = 1e-04, maxit = 20, acc = 1e-05, trace = FALSE, tol = -1)
 }
 \arguments{
 \item{formula}{the formula for the regression}
@@ -43,6 +43,9 @@ most users should not need to change this parameter.}
 \item{maxit}{the limit on the number of IWLS iterations.}
 
 \item{acc}{accuracy for the IWLS stopping criterion.}
+
+\item{trace}{logical indicating if output should be produced for each
+iteration.}
 
 \item{tol}{numeric tolerance. Set to -1 to ignore.}
 }

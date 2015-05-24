@@ -1,5 +1,6 @@
 #' Perform a generalized linear regression
 #'
+#' @importFrom       Matrix solve crossprod
 #' @param formula     the formula for the regression
 #' @param family      a description of the error distribution and link function to
 #'                     be used in the model. This can be a character string naming a
