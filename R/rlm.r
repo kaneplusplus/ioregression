@@ -24,6 +24,8 @@
 #' @param a           tuning parameter for Tukey bisquare. See Details for more information.
 #' @param maxit       the limit on the number of IWLS iterations.
 #' @param acc         accuracy for the IWLS stopping criterion.
+#' @param trace       logical indicating if output should be produced for each
+#'                     iteration.
 #' @param tol         numeric tolerance. Set to -1 to ignore.
 #' @details
 #' The parameter \code{a} controls the tradeoff between efficency
@@ -36,7 +38,7 @@
 iorlm = function(formula, data, weights=NULL, subset=NULL,
                 na.action=NULL, offset=NULL, contrasts=NULL,
                 beta_init=NULL, s_init=NULL, a=4.685, maxit = 20,
-                acc = 1e-4, tol=-1) {
+                acc = 1e-4, trace=FALSE, tol=-1) {
   call <- match.call()
 
   if (!inherits(data, "adf")) data = as.adf(data)
@@ -66,11 +68,12 @@ iorlm = function(formula, data, weights=NULL, subset=NULL,
     s = median(abs(resid20 - median(resid20))) * 1.4826
 
     beta = Matrix::solve(XTWX, XTWz, tol=2*.Machine$double.eps)
-    if (!is.null(beta_old) &&
-        as.vector(Matrix::crossprod(beta-beta_old) / sum(beta_old^2)) < acc) {
+    err = as.vector(Matrix::crossprod(beta-beta_old) / sum(beta_old^2))
+    if (!is.null(beta_old) && err < acc) {
       converged=TRUE
       break
     }
+    if (trace) cat(sprintf("Delta: %02.4f Scale: %02.4f Iterations - %d\n",err,s,i))
     beta_old = beta
   }
 

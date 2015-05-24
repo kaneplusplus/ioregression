@@ -26,14 +26,17 @@
 #'                     most users should not need to change this parameter.
 #' @param maxit       the limit on the number of IWLS iterations.
 #' @param acc         accuracy for the IWLS stopping criterion.
+#' @param trace       logical indicating if output should be produced for each
+#'                     iteration.
 #' @param tol         numeric tolerance. Set to -1 to ignore.
 #' @export
 iolp = function(formula, data, p=1.5, weights=NULL, subset=NULL,
                 na.action=NULL, offset=NULL, contrasts=NULL,
-                beta_init=NULL, delta=0.0001, maxit=20, acc=1e-5, tol=-1) {
+                beta_init=NULL, delta=0.0001, maxit=20, acc=1e-5,
+                trace=FALSE, tol=-1) {
   call <- match.call()
 
-  if (p > 2 || p < 1) stop("")
+  if (p > 2 || p < 1) stop("Invalid input to p; must have 1 <= p <= 2.")
   if (!inherits(data, "adf")) data = as.adf(data)
 
   if (is.null(beta_init)) {
@@ -57,11 +60,12 @@ iolp = function(formula, data, p=1.5, weights=NULL, subset=NULL,
     XTWz = Reduce(`+`, Map(function(x) x$XTWz, cvs))
 
     beta = Matrix::solve(XTWX, XTWz, tol=2*.Machine$double.eps)
-    if (!is.null(beta_old) &&
-        as.vector(Matrix::crossprod(beta-beta_old) / sum(beta_old^2 + delta)) < acc) {
+    err = as.vector(Matrix::crossprod(beta-beta_old) / sum(beta_old^2))
+    if (!is.null(beta_old) && err < acc) {
       converged=TRUE
       break
     }
+    if (trace) cat(sprintf("Delta: %02.4f Iterations - %d\n",err,i))
     beta_old = beta
   }
 

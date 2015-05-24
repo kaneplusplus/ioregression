@@ -22,11 +22,13 @@
 #' @param control     a list of parameters for controlling the fitting process.
 #' @param contrasts   contrasts to use with the regression. See the \code{contrasts.arg}
 #'                     of \code{model.matrix.default}
+#' @param trace       logical indicating if output should be produced for each
+#'                     iteration.
 #' @param tol         numeric tolerance. Set to -1 to ignore.
 #' @export
 ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
                 na.action=NULL, start = NULL, etastart, mustart, offset=NULL,
-                control=list(), contrasts=NULL,
+                control=list(), contrasts=NULL, trace=FALSE,
                 tol=-1) {
   call <- match.call()
   control <- do.call("glm.control", control)
@@ -47,7 +49,7 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
   for (i in 1:control$maxit) {
     pvar = list(beta=beta, cw=cumulative_weight, family=family,
                 deviance=deviance, wtdmu=wtdmu)
-    cvs = adf.apply(x=data, type="sparse.model",
+    cvs = adf.apply(x=data, type="model",
       FUN=glm_kernel ,passedVars=pvar, formula=formula,subset=subset,weights=weights,
         na.action=na.action, offset=offset, contrasts=contrasts)
     cvs = cvs[!sapply(cvs,is.null)]
@@ -64,10 +66,12 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
     contrasts = cvs[[1]]$contrasts
     # TODO: Add checking for singularities here.
     beta = Matrix::solve(XTWX, XTWz, tol=2*.Machine$double.eps)
-    if (!is.null(beta_old) && as.vector(Matrix::crossprod(beta-beta_old)) < control$epsilon) {
+    err = as.vector(Matrix::crossprod(beta-beta_old))
+    if (!is.null(beta_old) && err < control$epsilon) {
       converged=TRUE
       break
     }
+    if (trace) cat(sprintf("Delta: %02.4f Deviance: %02.4f Iterations - %d\n",err,deviance,i))
     beta_old = beta
   }
 
