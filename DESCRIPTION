@@ -1,7 +1,7 @@
 Package: ioregression
 Type: Package
 Title: Out-of-core regressions with connection inputs
-Version: 0.2
+Version: 0.3
 Date: 2015-05-04
 Author: Taylor Arnold, Michael J. Kane, Simon Urbanek
 Maintainer: Michael J. Kane <kaneplusplus@gmail.com>

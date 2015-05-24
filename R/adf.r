@@ -250,19 +250,25 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
     df = x$chunkProcessor(df)
     if (type == "data.frame") return(FUN(df,passedVars))
 
-    mf = match.call(expand.dots = FALSE)[1L]
-    mf$formula = formula
-    mf$data = df
-    if (!is.null(subset))
-      mf$subset = eval(parse(text=paste0("with(df, ", subset ,")")))
-    if (!is.null(weights))
-      mf$weights = eval(parse(text=paste0("with(df, ", weights ,")")))
-    if (!is.null(na.action))
-      mf$na.action = na.action
-    if (!is.null(offset))
-      mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
-    mf[[1L]] <- quote(lm.model.frame)
-    mf = eval(mf, parent.frame())
+    if (!is.null(subset)) {
+      subset = eval(parse(text=paste0("with(df, ", subset ,")")))
+      df = df[subset,]
+    }
+
+    environment(formula) = parent.frame()
+    if (is.null(weights) && is.null(offset)) {
+      mf = model.frame(formula=formula, data=df)
+    } else if (is.null(weights)) {
+      df$IO_OFFSET = eval(parse(text=paste0("with(df, ", offset ,")")))
+      mf = model.frame(formula=formula, data=df, offset=IO_OFFSET)
+    } else if (is.null(offset)) {
+      df$IO_WEIGHTS = eval(parse(text=paste0("with(df, ", weights ,")")))
+      mf = model.frame(formula=formula, data=df, weights=IO_WEIGHTS)
+    } else {
+      df$IO_OFFSET = eval(parse(text=paste0("with(df, ", offset ,")")))
+      df$IO_WEIGHTS = eval(parse(text=paste0("with(df, ", weights ,")")))
+      mf = model.frame(formula=formula, data=df, offset=IO_OFFSET, weights=IO_WEIGHTS)
+    }
     mt = attr(mf, "terms")
 
     y = model.response(mf, "numeric")
