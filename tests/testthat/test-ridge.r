@@ -13,12 +13,24 @@ data = adf(bz_file_name, sep=",", header=TRUE, conMethod="bzfile")
 data = allFactorLevels(data)
 df = read.table(bzfile(bz_file_name), header=TRUE, sep=",")
 
-# Create an iolm object:
-iolm = iolm(DepDelay ~ Distance + UniqueCarrier, data=data)
+# Test on a simple regression
+iolmObj = iolm(DepDelay ~ Distance + ArrDelay, data=data)
+iofit = iolm.ridge(iolmObj, lambda=seq(0, 1, by = 0.1))
+lmfit = lm.ridge(DepDelay ~ Distance + ArrDelay, df,
+                  lambda=seq(0, 1, by = 0.1)*nrow(df))
 
-#
-iofit = iolm.ridge(iolm, lambda=seq(0, 1, by = 0.1))
-lmfit = lm.ridge(DepDelay ~ Distance + UniqueCarrier, df, lambda=seq(0, 1, by = 0.1))
+iocoef = coef(iofit)
+lmcoef = coef(lmfit)
+attributes(lmcoef) = attributes(iocoef)
+expect_equal(iocoef, lmcoef, tol=0.01)
 
-# Check coef:
-expect_equal(as.numeric(coef(iofit)), as.numeric(coef(lmfit)))
+# Test on a regression with factors
+iolmObj = iolm(DepDelay ~ Distance + UniqueCarrier, data=data)
+iofit = iolm.ridge(iolmObj, lambda=seq(0, 1, by = 0.1))
+lmfit = lm.ridge(DepDelay ~ Distance + UniqueCarrier, df,
+                  lambda=seq(0, 1, by = 0.1)*nrow(df))
+
+iocoef = coef(iofit)
+lmcoef = coef(lmfit)
+attributes(lmcoef) = attributes(iocoef)
+expect_equal(iocoef, lmcoef, tol=0.005)
