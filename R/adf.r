@@ -280,7 +280,7 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
     else
       x = model.matrix(mt, mf, contrasts.arg=contrasts)
 
-    FUN(list(y=y,x=x,w=w,offset=offset), passedVars)
+    FUN(list(y=y,x=x,w=w,offset=offset,mt=mt), passedVars)
   }
 
   if (inherits(x$createNewConnection, "RDD")) {

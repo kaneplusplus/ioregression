@@ -48,10 +48,12 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
                         sum_y = sum_y,
                         sum_w = sum_w,
                         mean_x = apply(d$x,2,sum),
-                        contrasts=attr(d$x, "contrasts")))
+                        contrasts=attr(d$x, "contrasts"),
+                        mt=d$mt))
 
           },formula=formula,subset=subset,weights=weights,
             na.action=na.action, offset=offset, contrasts=contrasts)
+
   cvs = cvs[!sapply(cvs,is.null)]
   if (length(cvs) == 0L) stop("No valid data.")
   xtx = Reduce(`+`, Map(function(x) x$xtx, cvs))
@@ -62,6 +64,7 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
   n = Reduce(`+`, Map(function(x) x$n, cvs))
   mean_x = Reduce(`+`, Map(function(x) x$mean_x, cvs)) / n
   contrasts = cvs[[1]]$contrasts
+  mt = cvs[[1]]$mt
 
   # Get rid of colinear variables.
   ch = chol(xtx, pivot=TRUE, tol=tol)
@@ -69,7 +72,7 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
     # xtx is rank deficient.
     new_name_order = attr(ch, "pivot")
     effective_rank = attr(ch, "rank")
-    ft = terms(formula)
+    ft = mt
     formula_vars = colnames(attr(ft, "factors"))
     keep_vars = new_name_order[1:effective_rank]
     drop_var_names = colnames(xtx)[setdiff(new_name_order, keep_vars)]
@@ -95,9 +98,10 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
     ft = drop.terms(ft, drop_inds, keep.response=TRUE)
     form = formula(ft)
   }
+
   coefficients = as.numeric(Matrix::solve(xtx,xty))
   names(coefficients) = rownames(xtx)
-  terms = terms(formula)
+  terms = mt
   contrasts = contrasts
 
   ret = list(coefficients=coefficients, call=call, terms=terms,

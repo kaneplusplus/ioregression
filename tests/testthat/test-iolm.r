@@ -54,6 +54,22 @@ expect_equal(summary(iofit)[c("sigma","df","r.squared","adj.r.squared","fstatist
              summary(lmfit)[c("sigma","df","r.squared","adj.r.squared","fstatistic")])
 
 # Test data frames
-iofit = iolm(Sepal.Width ~ Sepal.Length, as.adf(iris))
+iofit = iolm(Sepal.Width ~ Sepal.Length, iris)
+lmfit =   lm(Sepal.Width ~ Sepal.Length, iris)
+expect_equal(coef(iofit),coef(lmfit))
+expect_equal(summary(iofit)$coefficients, summary(lmfit)$coefficients)
+expect_equal(summary(iofit)[c("sigma","df","r.squared","adj.r.squared","fstatistic")],
+             summary(lmfit)[c("sigma","df","r.squared","adj.r.squared","fstatistic")])
+
+# Test dot notation
+iofit = iolm(Sepal.Width ~ ., iris)
+lmfit =   lm(Sepal.Width ~ ., iris)
+expect_equal(coef(iofit),coef(lmfit))
+expect_equal(summary(iofit)$coefficients, summary(lmfit)$coefficients)
+expect_equal(summary(iofit)[c("sigma","df","r.squared","adj.r.squared","fstatistic")],
+             summary(lmfit)[c("sigma","df","r.squared","adj.r.squared","fstatistic")])
+
+
+
 
 
