@@ -47,12 +47,14 @@ soft_thresh = function(x, g) {
 #' determined from the data. This is ignored when lambda is specified.
 #' @param nlambdas the number of lambdas to be generated in the regularization
 #' path. This is ignored when lambda is specified.
+#' @param parallel    integer. the number of parallel processes to use in the
+#'                     calculation (*nix only).
 #' @export
 iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
                  offset=NULL, alpha=1, lambda=NULL, contrasts=NULL,
                  standardize=TRUE, tol=1e-7,
                  max_it = 1e+05, filter=c("strong", "safe", "none"),
-                 lambda_epsilon=0.0001, nlambdas=100) {
+                 lambda_epsilon=0.0001, nlambdas=100,parallel=1L) {
 
   # Under-development related messages.
   if (!standardize) stop("Unstandardizing data is not yet supported.")
@@ -94,7 +96,8 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
                     all_var_names = colnames(d$x)))
 
       },formula=formula,subset=subset,weights=weights,
-        na.action=na.action, offset=offset, contrasts=contrasts)
+        na.action=na.action, offset=offset, contrasts=contrasts,
+        parallel=parallel)
     stand_info = stand_info[!sapply(stand_info, is.null)]
     if (length(stand_info) == 0L) stop("No valid data.")
     num_rows = Reduce(`+`, Map(function(x) x$num_rows, stand_info))

@@ -6,7 +6,8 @@
 \usage{
 ioglm(formula, family = gaussian, data, weights = NULL, subset = NULL,
   na.action = NULL, start = NULL, etastart, mustart, offset = NULL,
-  control = list(), contrasts = NULL, trace = FALSE, tol = -1)
+  control = list(), contrasts = NULL, trace = FALSE, tol = -1,
+  parallel = 1L)
 }
 \arguments{
 \item{formula}{the formula for the regression}
@@ -47,6 +48,9 @@ of \code{model.matrix.default}}
 iteration.}
 
 \item{tol}{numeric tolerance. Set to -1 to ignore.}
+
+\item{parallel}{integer. the number of parallel processes to use in the
+calculation (*nix only).}
 }
 \description{
 Perform a generalized linear regression

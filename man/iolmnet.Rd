@@ -7,7 +7,7 @@
 iolmnet(formula, data, subset = NULL, weights = NULL, na.action = NULL,
   offset = NULL, alpha = 1, lambda = NULL, contrasts = NULL,
   standardize = TRUE, tol = 1e-07, max_it = 1e+05, filter = c("strong",
-  "safe", "none"), lambda_epsilon = 1e-04, nlambdas = 100)
+  "safe", "none"), lambda_epsilon = 1e-04, nlambdas = 100, parallel = 1L)
 }
 \arguments{
 \item{formula}{the formulat for the regression}
@@ -53,6 +53,9 @@ determined from the data. This is ignored when lambda is specified.}
 
 \item{nlambdas}{the number of lambdas to be generated in the regularization
 path. This is ignored when lambda is specified.}
+
+\item{parallel}{integer. the number of parallel processes to use in the
+calculation (*nix only).}
 }
 \description{
 Fit a linear model via penalized maxiumum likelihood.
