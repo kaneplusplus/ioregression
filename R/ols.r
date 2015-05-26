@@ -24,6 +24,13 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
   call = match.call()
   if (!inherits(data, "adf")) data = as.adf(data)
 
+  if (!is.null(weights) && !is.character(weights <- weights[[1]]))
+    stop("weights must be a length one character vector")
+  if (!is.null(subset) && !is.character(subset <- subset[[1]]))
+    stop("subset must be a length one character vector")
+  if (!is.null(offset) && !is.character(offset <- offset[[1]]))
+    stop("offset must be a length one character vector")
+
   cvs = adf.apply(x=data, type="sparse.model",
           FUN=function(d,passedVars) {
             if (nrow(d$x) == 0L) return(NULL)

@@ -63,6 +63,13 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
   call = match.call()
   if (!inherits(data, "adf")) data = as.adf(data)
 
+  if (!is.null(weights) && !is.character(weights <- weights[[1]]))
+    stop("weights must be a length one character vector")
+  if (!is.null(subset) && !is.character(subset <- subset[[1]]))
+    stop("subset must be a length one character vector")
+  if (!is.null(offset) && !is.character(offset <- offset[[1]]))
+    stop("offset must be a length one character vector")
+
   # Get the standardization information as well as the
   # lambdas from the data. Note that this will take two passes. One to get
   # the means, one to get the variances. If you try to do it in a single

@@ -45,6 +45,13 @@ iorlm = function(formula, data, weights=NULL, subset=NULL,
 
   if (!inherits(data, "adf")) data = as.adf(data)
 
+  if (!is.null(weights) && !is.character(weights <- weights[[1]]))
+    stop("weights must be a length one character vector")
+  if (!is.null(subset) && !is.character(subset <- subset[[1]]))
+    stop("subset must be a length one character vector")
+  if (!is.null(offset) && !is.character(offset <- offset[[1]]))
+    stop("offset must be a length one character vector")
+
   if (is.null(beta_init) || is.null(s_init))
     lm.out = iolm(formula, data, subset=subset, weights=weights,
                     na.action=na.action, offset=offset, contrasts=NULL,
