@@ -67,7 +67,11 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
     contrasts = cvs[[1]]$contrasts
     # TODO: Add checking for singularities here.
     beta = Matrix::solve(XTWX, XTWz, tol=2*.Machine$double.eps)
-    err = as.vector(Matrix::crossprod(beta-beta_old))
+    if (!is.null(beta_old))
+      err = as.vector(Matrix::crossprod(beta-beta_old))
+    else
+      err = control$epsilon * 2
+
     if (!is.null(beta_old) && err < control$epsilon) {
       converged=TRUE
       break
