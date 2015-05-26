@@ -24,6 +24,7 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
   cvs = adf.apply(x=data, type="sparse.model",
           FUN=function(d,passedVars) {
             if (nrow(d$x) == 0L) return(NULL)
+            z = d$y # non-offset version
             if (!is.null(d$offset)) d$y = d$y - d$offset
             if (!is.null(d$w)) {
               if (any(d$w == 0)) {
@@ -34,19 +35,34 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
                 if (!is.null(d$offset)) d$offset = d$offset[ok]
               }
               sum_y = sum(d$y * d$w)
+              sum_z = sum(z * d$w)
               sum_w = sum(d$w)
+              if (!is.null(d$offset)) sum_o = sum(d$offset) else sum_o = 0
               d$x = d$x * sqrt(d$w)
               d$y = d$y * sqrt(d$w)
+              if (!is.null(d$offset)) d$offset = d$offset * sqrt(d$w)
+              z = z * sqrt(d$w)
             } else {
               sum_y = sum(d$y)
+              sum_z = sum(z)
               sum_w = nrow(d$x)
+            }
+            if (!is.null(d$offset)) {
+              oto = Matrix::crossprod(d$offset)
+              xto = Matrix::crossprod(d$x, d$offset)
+            } else {
+              oto = Matrix(0)
+              xto = Matrix(0,nrow=ncol(d$x))
             }
             return(list(xtx = Matrix::crossprod(d$x),
                         xty = Matrix::crossprod(d$x, d$y),
                         yty = Matrix::crossprod(d$y),
+                        oto = oto,
+                        xto = xto,
                         n = nrow(d$x),
                         sum_y = sum_y,
                         sum_w = sum_w,
+                        sum_z = sum_z,
                         mean_x = apply(d$x,2,sum),
                         contrasts=attr(d$x, "contrasts"),
                         mt=d$mt))
@@ -61,10 +77,14 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
   sum_y = Reduce(`+`, Map(function(x) x$sum_y, cvs))
   sum_w = Reduce(`+`, Map(function(x) x$sum_w, cvs))
   yty = Reduce(`+`, Map(function(x) x$yty, cvs))
+  oto = Reduce(`+`, Map(function(x) x$oto, cvs))
+  xto = Reduce(`+`, Map(function(x) x$xto, cvs))
+  sum_z = Reduce(`+`, Map(function(x) x$sum_z, cvs))
   n = Reduce(`+`, Map(function(x) x$n, cvs))
   mean_x = Reduce(`+`, Map(function(x) x$mean_x, cvs)) / n
   contrasts = cvs[[1]]$contrasts
   mt = cvs[[1]]$mt
+
 
   # Get rid of colinear variables.
   ch = chol(xtx, pivot=TRUE, tol=tol)
@@ -105,7 +125,8 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
   contrasts = contrasts
 
   ret = list(coefficients=coefficients, call=call, terms=terms,
-             xtx=xtx, xty=xty, yty=yty, mean_x=mean_x,
+             xtx=xtx, xty=xty, yty=yty, oto=oto, xto=xto, sum_z=sum_z,
+             mean_x=mean_x,
              sum_y=as.numeric(sum_y), sum_w=as.numeric(sum_w),
              n=n, data=data, contrasts=contrasts, rank=ncol(xtx))
   class(ret) = "iolm"
@@ -124,9 +145,10 @@ summary.iolm = function(object, ...) {
   beta = coef(object)
   btxtxb = t(beta) %*% object$xtx %*% beta
   rss = object$yty + btxtxb - 2 * t(beta) %*% object$xty
-  tss = object$yty - object$sum_y^2 / object$sum_w
-  mss <- if (attr(object$terms, "intercept"))
-            (tss - rss) else as.numeric(btxtxb)
+
+  mss = btxtxb + object$oto + 2 * Matrix::t(object$xto) %*% beta
+  if (attr(object$terms, "intercept"))
+    mss = mss - object$sum_z^2 / object$sum_w
 
   rss_beta = object$yty - btxtxb
   df = c(length(beta),
