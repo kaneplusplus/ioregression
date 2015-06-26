@@ -5,7 +5,7 @@
 \title{Perform a linear regression}
 \usage{
 iolm(formula, data, subset = NULL, weights = NULL, na.action = NULL,
-  offset = NULL, contrasts = NULL, tol = -1)
+  offset = NULL, contrasts = NULL, tol = -1, parallel = 1L)
 }
 \arguments{
 \item{formula}{the formula for the regression}
@@ -30,6 +30,9 @@ frame of the data, giving the offsets for the regression}
 of \code{model.matrix.default}}
 
 \item{tol}{numeric tolerance. Set to -1 to ignore.}
+
+\item{parallel}{integer. the number of parallel processes to use in the
+calculation (*nix only).}
 }
 \description{
 Perform a linear regression

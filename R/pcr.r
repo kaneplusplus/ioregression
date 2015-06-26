@@ -4,6 +4,7 @@
 #' and recalculates the regression vector with only
 #' the top k-principal components.
 #'
+#' @importFrom       Matrix diag
 #' @param object     an iolm object with the desired formula
 #' @param k          A scalar or vector of degrees to fit.
 #' @param normalize  If TRUE, each variable is standardized to

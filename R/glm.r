@@ -1,5 +1,6 @@
 #' Perform a generalized linear regression
 #'
+#' @importFrom       Matrix solve crossprod
 #' @param formula     the formula for the regression
 #' @param family      a description of the error distribution and link function to
 #'                     be used in the model. This can be a character string naming a
@@ -22,12 +23,16 @@
 #' @param control     a list of parameters for controlling the fitting process.
 #' @param contrasts   contrasts to use with the regression. See the \code{contrasts.arg}
 #'                     of \code{model.matrix.default}
+#' @param trace       logical indicating if output should be produced for each
+#'                     iteration.
 #' @param tol         numeric tolerance. Set to -1 to ignore.
+#' @param parallel    integer. the number of parallel processes to use in the
+#'                     calculation (*nix only).
 #' @export
 ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
                 na.action=NULL, start = NULL, etastart, mustart, offset=NULL,
-                control=list(), contrasts=NULL,
-                tol=-1) {
+                control=list(), contrasts=NULL, trace=FALSE,
+                tol=-1, parallel=1L) {
   call <- match.call()
   control <- do.call("glm.control", control)
   if (is.character(family))
@@ -41,15 +46,24 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
 
   if (!inherits(data, "adf")) data = as.adf(data)
 
+  if (!is.null(weights) && !is.character(weights <- weights[[1]]))
+    stop("weights must be a length one character vector")
+  if (!is.null(subset) && !is.character(subset <- subset[[1]]))
+    stop("subset must be a length one character vector")
+  if (!is.null(offset) && !is.character(offset <- offset[[1]]))
+    stop("offset must be a length one character vector")
+
   converged=FALSE
   beta = beta_old = start
   wtdmu = deviance =  cumulative_weight = NULL
   for (i in 1:control$maxit) {
     pvar = list(beta=beta, cw=cumulative_weight, family=family,
                 deviance=deviance, wtdmu=wtdmu)
-    cvs = adf.apply(x=data, type="sparse.model",
-      FUN=glm_kernel ,passedVars=pvar, formula=formula,subset=subset,weights=weights,
-        na.action=na.action, offset=offset, contrasts=contrasts)
+    cvs = adf.apply(x=data, type="model", FUN=glm_kernel,
+                    passedVars=pvar, formula=formula, subset=subset,
+                    weights=weights, na.action=na.action,
+                    offset=offset, contrasts=contrasts,
+                    parallel=parallel)
     cvs = cvs[!sapply(cvs,is.null)]
 
     XTWX = Reduce(`+`, Map(function(x) x$XTWX, cvs))
@@ -64,10 +78,16 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
     contrasts = cvs[[1]]$contrasts
     # TODO: Add checking for singularities here.
     beta = Matrix::solve(XTWX, XTWz, tol=2*.Machine$double.eps)
-    if (!is.null(beta_old) && as.vector(Matrix::crossprod(beta-beta_old)) < control$epsilon) {
+    if (!is.null(beta_old))
+      err = as.vector(Matrix::crossprod(beta-beta_old))
+    else
+      err = control$epsilon * 2
+
+    if (!is.null(beta_old) && err < control$epsilon) {
       converged=TRUE
       break
     }
+    if (trace) cat(sprintf("Delta: %02.4f Deviance: %02.4f Iterations - %d\n",err,deviance,i))
     beta_old = beta
   }
 

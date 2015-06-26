@@ -65,7 +65,7 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
   if (is.function(conMethod)) {
     output$createNewConnection = conMethod
   } else if (inherits(conMethod,"jobj")) {
-    output$createNewConnection = SparkR::textFile(conMethod, description, minSplits)
+    # output$createNewConnection = SparkR::textFile(conMethod, description, minSplits)
   } else {
     description = path.expand(description)
     conMethod = match.arg(conMethod)
@@ -77,9 +77,9 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
               length(setdiff(colNames[colClasses %in% c("character", "factor")],names(levels))))
   if (needHead) {
     if (inherits(output$createNewConnection, "RDD")) {
-      rows = SparkR::lapplyPartition(output$createNewConnection, function(z) head(z,n=nrowsClasses))
-      rows = SparkR::collect(rows)
-      rows = as.vector(rows, mode="character")
+      # rows = SparkR::lapplyPartition(output$createNewConnection, function(z) head(z,n=nrowsClasses))
+      # rows = SparkR::collect(rows)
+      # rows = as.vector(rows, mode="character")
     } else {
       on.exit(close(con))
       if (is.function(output$createNewConnection)) {
@@ -250,19 +250,26 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
     df = x$chunkProcessor(df)
     if (type == "data.frame") return(FUN(df,passedVars))
 
-    mf = match.call(expand.dots = FALSE)[1L]
-    mf$formula = formula
-    mf$data = df
-    if (!is.null(subset))
-      mf$subset = eval(parse(text=paste0("with(df, ", subset ,")")))
-    if (!is.null(weights))
-      mf$weights = eval(parse(text=paste0("with(df, ", weights ,")")))
-    if (!is.null(na.action))
-      mf$na.action = na.action
-    if (!is.null(offset))
-      mf$offset = eval(parse(text=paste0("with(df, ", offset ,")")))
-    mf[[1L]] <- quote(lm.model.frame)
-    mf = eval(mf, parent.frame())
+    if (!is.null(subset)) {
+      subset = eval(parse(text=paste0("with(df, ", subset ,")")))
+      df = df[subset,]
+    }
+
+    IO_OFFSET = IO_WEIGHTS = NULL # to silence NOTES from R CMD CHECK
+    environment(formula) = parent.frame()
+    if (is.null(weights) && is.null(offset)) {
+      mf = model.frame(formula=formula, data=df)
+    } else if (is.null(weights)) {
+      df$IO_OFFSET = eval(parse(text=paste0("with(df, ", offset ,")")))
+      mf = model.frame(formula=formula, data=df, offset=IO_OFFSET)
+    } else if (is.null(offset)) {
+      df$IO_WEIGHTS = eval(parse(text=paste0("with(df, ", weights ,")")))
+      mf = model.frame(formula=formula, data=df, weights=IO_WEIGHTS)
+    } else {
+      df$IO_OFFSET = eval(parse(text=paste0("with(df, ", offset ,")")))
+      df$IO_WEIGHTS = eval(parse(text=paste0("with(df, ", weights ,")")))
+      mf = model.frame(formula=formula, data=df, offset=IO_OFFSET, weights=IO_WEIGHTS)
+    }
     mt = attr(mf, "terms")
 
     y = model.response(mf, "numeric")
@@ -273,12 +280,12 @@ adf.apply = function(x, FUN, type=c("data.frame", "model", "sparse.model"),
     else
       x = model.matrix(mt, mf, contrasts.arg=contrasts)
 
-    FUN(list(y=y,x=x,w=w,offset=offset), passedVars)
+    FUN(list(y=y,x=x,w=w,offset=offset,mt=mt), passedVars)
   }
 
   if (inherits(x$createNewConnection, "RDD")) {
-    output = SparkR::lapplyPartition(x$createNewConnection, function(z) list(FUN2(z)))
-    output = SparkR::collect(output)
+    # output = SparkR::lapplyPartition(x$createNewConnection, function(z) list(FUN2(z)))
+    # output = SparkR::collect(output)
   } else {
     on.exit(close(con))
     if (is.function(x$createNewConnection)) {
