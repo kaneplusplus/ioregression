@@ -93,7 +93,8 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
                     col_sum_x_squared = Matrix::colSums(d$x^2),
                     sum_y = sum(d$y),
                     contrasts=attr(d$x, "contrasts"),
-                    all_var_names = colnames(d$x)))
+                    all_var_names = colnames(d$x),
+                    xty_unstandardized=Matrix::crossprod(d$x, d$y)))
 
       },formula=formula,subset=subset,weights=weights,
         na.action=na.action, offset=offset, contrasts=contrasts)
@@ -101,14 +102,16 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     if (length(stand_info) == 0L) stop("No valid data.")
     num_rows = Reduce(`+`, Map(function(x) x$num_rows, stand_info))    
     sum_w = Reduce(`+`, Map(function(x) x$sum_w , stand_info))    
-    col_mean_x = Reduce(`+`, 
-      Map(function(x) x$col_sum_x, stand_info)) / num_rows
+    col_sum_x = Reduce(`+`, Map(function(x) x$col_sum_x, stand_info))
+    col_mean_x = col_sum_x / num_rows
     sum_y = Reduce(`+`, Map(function(x) x$sum_y, stand_info)) 
     mean_y = sum_y / num_rows
     col_sum_x_squared = Reduce(`+`, 
       Map(function(x) x$col_sum_x_squared, stand_info)) 
     contrasts=stand_info[[1]]$contrasts
     all_var_names = stand_info[[1]]$all_var_names
+    xty_unstandardized = Reduce(`+`, Map(function(x) x$xty_unstandardized,
+      stand_info))
 
     # Get the standard deviations and then fix the lambdas.
     stand_info = adf.apply(x=data, type="sparse.model",
@@ -150,7 +153,11 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
   } else {
     stop("Non-standardized regressors are not yet supported.")
   }
+
+
   data_lambdas = abs(normalized_xty) / num_rows / alpha
+  data_lambdas_unstandardized = xty_unstandardized
+
   lambda_k = max(abs(data_lambdas))
   if (is.null(lambda)) {
     lambda_path = seq(from=lambda_k, to=lambda_epsilon*lambda_k, 
@@ -244,6 +251,7 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     }
     a0 = c(a0, mean_y)
   }
+  lambda_path_unnormalized = lambda*x_sd*y_sd + 
   list(call=call, a0=a0, beta=beta_path, lambda = lambda_path)
 }
 
