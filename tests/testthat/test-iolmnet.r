@@ -15,7 +15,6 @@ fit = glmnet(x, y, alpha=alpha)
 print(fit$beta[,ncol(fit$beta)])
 print(iofit$beta[,ncol(iofit$beta)])
 
-
 iofit = iolmnet(Y ~ ., df, alpha=alpha, standardize=TRUE)
 col_means = colMeans(x)
 x = x - matrix(data=col_means, ncol=ncol(x), nrow=nrow(x), byrow=TRUE)
