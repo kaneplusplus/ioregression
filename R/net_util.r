@@ -1,4 +1,16 @@
 
+soft_thresh = function(x, g) {
+  x = as.vector(x)
+  w1 = which(g >= abs(x))
+  w2 = which(g < abs(x) & x > 0)
+  w3 = which(g < abs(x) & x < 0)
+  ret = x
+  ret[w1] = 0
+  ret[w2] = x[w2]-g
+  ret[w3] = x[w3]+g
+  Matrix::Matrix(ret, nrow=length(x))
+}
+
 # Get xty, xtx_all, num_rows, and all_var_names from an adf.
 net_matrices = function(data, formula, standardize, subset, weights, na.action,
                         offset, contrasts, parallel) {

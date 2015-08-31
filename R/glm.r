@@ -25,14 +25,16 @@
 #'                     of \code{model.matrix.default}
 #' @param trace       logical indicating if output should be produced for each
 #'                     iteration.
-#' @param tol         numeric tolerance. Set to -1 to ignore.
+#' @param tol         numeric tolerance when calling solve. 
+#' @param stat_tol    statistical tolerance for the slope coefficients. If NA
+#' then only the numerical tolerance is used.
 #' @param parallel    integer. the number of parallel processes to use in the
 #'                     calculation (*nix only).
 #' @export
 ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
                 na.action=NULL, start = NULL, etastart, mustart, offset=NULL,
                 control=list(), contrasts=NULL, trace=FALSE,
-                tol=-1, parallel=1L) {
+                tol=2*.Machine$double.eps, stat_tol=NA, parallel=1L) {
   call <- match.call()
   control <- do.call("glm.control", control)
   if (is.character(family))
@@ -77,17 +79,38 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
     }
     contrasts = cvs[[1]]$contrasts
     # TODO: Add checking for singularities here.
-    beta = Matrix::solve(XTWX, XTWz, tol=2*.Machine$double.eps)
+    beta = Matrix::solve(XTWX, XTWz, tol=tol)
     if (!is.null(beta_old))
       err = as.vector(Matrix::crossprod(beta-beta_old))
     else
       err = control$epsilon * 2
 
-    if (!is.null(beta_old) && err < control$epsilon) {
+    if (!is.null(stat_tol)) {
+      if (!is.null(beta_old)) {
+        rank=nrow(XTWX)
+        nobs = Reduce(`+`, Map(function(x) x$nobs, cvs))
+        RSS = Reduce(`+`, Map(function(x) x$RSS, cvs))
+        resdf = nobs - rank
+        var_res = RSS/resdf
+        dispersion=if(family$family%in%c("poisson", "binomial")) 1 else var_res
+        inv_scatter = solve(XTWX)
+        standard_errors = sqrt(dispersion * diag(inv_scatter))
+        p_val = pchisq(sum((as.vector(beta-beta_old))/standard_errors)^2, 
+                       length(beta))
+        print(((beta-beta_old)/standard_errors)^2)
+        if (trace)
+          cat(sprintf("Test for convergence p-value is: %02.10f\n",p_val))
+      }
+    } 
+    if ( (!is.null(beta_old) && (err < control$epsilon)) || 
+         (!is.null(stat_tol) && (p_val < stat_tol)) ) {
       converged=TRUE
       break
     }
-    if (trace) cat(sprintf("Delta: %02.4f Deviance: %02.4f Iterations - %d\n",err,deviance,i))
+    if (trace) {
+      cat(sprintf("Delta: %02.4f Deviance: %02.4f Iterations - %d\n",
+                  err,deviance,i))
+    }
     beta_old = beta
   }
 
@@ -185,8 +208,8 @@ glm_kernel = function(d, passedVars=NULL) {
   }
 
   list(XTWX=Matrix::crossprod(d$x, W * d$x), XTWz=Matrix::crossprod(d$x, W*z),
-       deviance=deviance, null_dev=null_dev, cumulative_weight=sum(d$w), nobs=nobs,
-       aic=aic, RSS=RSS, contrasts=attr(d$x, "contrasts"),
+       deviance=deviance, null_dev=null_dev, cumulative_weight=sum(d$w), 
+       nobs=nobs, aic=aic, RSS=RSS, contrasts=attr(d$x, "contrasts"),
        wy=Matrix::crossprod(sqrt(weights), d$y))
 }
 

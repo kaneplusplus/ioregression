@@ -1,24 +1,12 @@
 
-soft_thresh = function(x, g) {
-  x = as.vector(x)
-  w1 = which(g >= abs(x))
-  w2 = which(g < abs(x) & x > 0)
-  w3 = which(g < abs(x) & x < 0)
-  ret = x
-  ret[w1] = 0
-  ret[w2] = x[w2]-g
-  ret[w3] = x[w3]+g
-  Matrix::Matrix(ret, nrow=length(x))
-}
-
 #' Fit a linear model with lasso or elasticnet regularization
 #'
 #' Fit a linear model via penalized maxiumum likelihood.
 #' The regularization path is computed for the lasso or elasticnet
 #' penalty at a grid of values for the regularization parameter
-#' lambda. Can deal data frames or abstract data frames.
+#' lambda. The function can deal data frames or abstract data frames.
 #' @importFrom       Matrix crossprod colSums Matrix
-#' @param formula the formulat for the regression
+#' @param formula the formula for the regression
 #' @param data an abstract data frame or something that can be coerced into one.
 #' @param subset an options character string, which will be evaluated in the
 #' frame of the data, to indicate which rows to include in the analysis

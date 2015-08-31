@@ -6,8 +6,8 @@
 \usage{
 ioglm(formula, family = gaussian, data, weights = NULL, subset = NULL,
   na.action = NULL, start = NULL, etastart, mustart, offset = NULL,
-  control = list(), contrasts = NULL, trace = FALSE, tol = -1,
-  parallel = 1L)
+  control = list(), contrasts = NULL, trace = FALSE, tol = 2 *
+  .Machine$double.eps, stat_tol = NA, parallel = 1L)
 }
 \arguments{
 \item{formula}{the formula for the regression}
@@ -47,7 +47,10 @@ of \code{model.matrix.default}}
 \item{trace}{logical indicating if output should be produced for each
 iteration.}
 
-\item{tol}{numeric tolerance. Set to -1 to ignore.}
+\item{tol}{numeric tolerance when calling solve.}
+
+\item{stat_tol}{statistical tolerance for the slope coefficients. If NA
+then only the numerical tolerance is used.}
 
 \item{parallel}{integer. the number of parallel processes to use in the
 calculation (*nix only).}
