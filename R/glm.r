@@ -34,7 +34,7 @@
 ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
                 na.action=NULL, start = NULL, etastart, mustart, offset=NULL,
                 control=list(), contrasts=NULL, trace=FALSE,
-                tol=2*.Machine$double.eps, stat_tol=NA, parallel=1L) {
+                tol=2*.Machine$double.eps, stat_tol=NULL, parallel=1L) {
   call <- match.call()
   control <- do.call("glm.control", control)
   if (is.character(family))
@@ -84,7 +84,7 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
       err = as.vector(Matrix::crossprod(beta-beta_old))
     else
       err = control$epsilon * 2
-
+    p_val=Inf
     if (!is.null(stat_tol)) {
       if (!is.null(beta_old)) {
         rank=nrow(XTWX)
@@ -93,17 +93,26 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
         resdf = nobs - rank
         var_res = RSS/resdf
         dispersion=if(family$family%in%c("poisson", "binomial")) 1 else var_res
-        inv_scatter = solve(XTWX)
-        standard_errors = sqrt(dispersion * diag(inv_scatter))
-        p_val = pchisq(sum((as.vector(beta-beta_old))/standard_errors)^2, 
-                       length(beta))
-        print(((beta-beta_old)/standard_errors)^2)
+        Q = eigen(XTWX)$vectors
+        standard_errors = sqrt(dispersion * diag(1/crossprod(Q, XTWX) %*% Q))
+        beta_ortho = crossprod(Q, beta) / standard_errors
+        # beta ortho's now have se 1 and zero correlation terms.
+        beta_old_ortho = crossprod(Q, beta_old) / standard_errors
+        beta_ortho_diff = beta_ortho - beta_old_ortho
+        p = length(beta_ortho_diff)
+        s = sqrt(4/(p-1) * sum(beta_ortho_diff^2))
+        # TODO: add a delta...
+        test_stat = sum(beta_ortho_diff) * sqrt(p)/ s 
+        p_val_l = pt(test_stat, p-1, lower.tail=TRUE)
+        p_val_r = pt(test_stat, p-1, lower.tail=FALSE)
+        print(p_val_l)
+        print(p_val_r)
         if (trace)
           cat(sprintf("Test for convergence p-value is: %02.10f\n",p_val))
       }
     } 
     if ( (!is.null(beta_old) && (err < control$epsilon)) || 
-         (!is.null(stat_tol) && (p_val < stat_tol)) ) {
+         (!is.null(stat_tol) && is.finite(p_val) && (p_val < stat_tol)) ) {
       converged=TRUE
       break
     }

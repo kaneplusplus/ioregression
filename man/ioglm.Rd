@@ -7,7 +7,7 @@
 ioglm(formula, family = gaussian, data, weights = NULL, subset = NULL,
   na.action = NULL, start = NULL, etastart, mustart, offset = NULL,
   control = list(), contrasts = NULL, trace = FALSE, tol = 2 *
-  .Machine$double.eps, stat_tol = NA, parallel = 1L)
+  .Machine$double.eps, stat_tol = NULL, parallel = 1L)
 }
 \arguments{
 \item{formula}{the formula for the regression}
