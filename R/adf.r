@@ -61,15 +61,15 @@ adf = function(description, conMethod = c("file", "gzfile", "bzfile", "xzfile"),
   if (!missing(colClasses))
     output$colClasses = colClasses
 
-  # Construct the connection method
+  # Construct the connection method. output$createNewConnection is a list of functions to create a connection.
   if (is.function(conMethod)) {
-    output$createNewConnection = conMethod
+    output$createNewConnection = list(conMethod)
   } else if (inherits(conMethod,"jobj")) {
     # output$createNewConnection = SparkR::textFile(conMethod, description, minSplits)
   } else {
     description = path.expand(description)
     conMethod = match.arg(conMethod)
-    output$createNewConnection = call(conMethod, description=description, open="rb")
+    output$createNewConnection = list(call(conMethod, description=description, open="rb"))
   }
 
   # Build the chunkFormatter
