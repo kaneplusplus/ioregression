@@ -65,6 +65,8 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
   data_lambdas = abs(xty) / num_rows / alpha
   lambda_k = max(abs(data_lambdas))
   if (is.null(lambda)) {
+    # change this
+    # should be exp(seq(log(labmda_min), log(lambda_max), length(100)))
     lambda_path = seq(from=lambda_k, to=lambda_epsilon*lambda_k,
                       length.out=nlambdas)
   } else {
@@ -93,6 +95,8 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     xtx = xtx_all[active_regressors,,drop=FALSE]
     xtx = xtx[,active_regressors,drop=FALSE]
     if (nrow(xtx) > 0) {
+      # This should change, intercept starts at 1 the rest can start
+      # at zero.
       beta = Matrix::Matrix(1, nrow=nrow(xtx), ncol=1)
       beta_old = -beta
       it_num = 0
