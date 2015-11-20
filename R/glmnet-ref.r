@@ -8,25 +8,66 @@ soft_thresh = function(x, g) {
   ret[w1] = 0
   ret[w2] = x[w2]-g
   ret[w3] = x[w3]+g
-  Matrix::Matrix(ret, nrow=length(x))
+  ret
 }
 
-glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=25, tol=1e-08)
-{
-  beta = rep(0,ncol(x))
-  for(j in 1:maxit)
-  {
-    eta    = X %*% beta
-    g      = family()$linkinv(eta)
-    gprime = family()$mu.eta(eta)
-    z      = eta + (b - g) / gprime
-    W      = as.vector(gprime^2 / family()$variance(g))
-    WXy = W*X*(y - X %*% beta)
-    WX2 = W*X^2
+lmnet_ref = function(X, y, lambda, alpha, maxit=10000, tol=1e-7) {
+  beta = rep(1, ncol(X))
+  xty = crossprod(X, y)
+  xtx = crossprod(X)
+  for(j in 1:maxit) {
     beta_old = beta
-    beta = soft_thresh(Matrix::colSums(WXy), lambda*alpha) /
-           (Matrix::colSums(WX^2) + lambda*(1-alpha))
+    beta = soft_thresh((xty - xtx %*% beta)/nrow(X) + beta, lambda*alpha) 
+    beta = beta / (1 + lambda*(1-alpha))
     if(sqrt(crossprod(beta-beta_old)) < tol) break
   }
-  list(coefficients=beta,iterations=j)
+  list(beta=beta, iterations=j)
 }
+
+x=matrix(rnorm(100*20),100,20)
+y=rnorm(100)
+fit=glmnet(x,y, lambda=lambda)
+
+fit_ref = lmnet_ref(x, y, lambda=0.0454336178, alpha=1)
+crossprod(fit_ref$beta, fit$beta)
+
+
+glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=10, tol=1e-08)
+{
+  beta = rep(1,ncol(X))
+  resids = c()
+  for(j in 1:maxit)
+  {
+    beta_outer_old = beta
+    eta    = as.matrix(X %*% beta)
+    g      = family()$linkinv(eta)
+    gprime = family()$mu.eta(eta)
+    z      = eta + (y - g) / gprime
+    W      = as.vector(gprime^2 / family()$variance(g))
+    wxtz = crossprod(W*X, z)
+    wxtx = crossprod(W*X, X)
+    wx_norm = colSums(W*X^2)
+    for (k in 1:maxit) {
+      beta_inner_old = beta
+      beta = soft_thresh((wxtz - wxtx %*% beta)/nrow(X) + beta, lambda*alpha)
+      beta = beta / (wx_norm + lambda*(1-alpha))
+      if(sqrt(as.double(crossprod(beta-beta_inner_old))) < tol) break
+    }
+  }
+  list(beta=beta,iterations=j, resids=resids)
+}
+
+x = matrix(rnorm(100*20),100,20)
+g2 = sample(0:1,100,replace=TRUE)
+lambda = 0.0489798934 
+
+fg = glmnet(x,g2,family="binomial", lambda=lambda)
+
+fit = glmnet_ref(x, g2, lambda=lambda, alpha=1)
+fit$beta
+fit$iterations
+crossprod(fit$beta, fg$beta)
+
+
+
+
