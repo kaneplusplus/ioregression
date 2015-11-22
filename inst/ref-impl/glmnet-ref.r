@@ -53,8 +53,9 @@ glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=10, tol=1e-08)
       beta = beta / (wx_norm + lambda*(1-alpha))
       if(sqrt(as.double(crossprod(beta-beta_inner_old))) < tol) break
     }
+    if (sqrt(as.double(crossprod(beta-beta_outer_old))) < tol) break
   }
-  list(beta=beta,iterations=j, resids=resids)
+  list(beta=beta,iterations=j)
 }
 
 x = matrix(rnorm(100*20),100,20)
