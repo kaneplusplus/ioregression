@@ -49,7 +49,7 @@ glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=10, tol=1e-08)
     for (k in 1:maxit) {
       beta_inner_old = beta
       for (l in 1:length(beta)) {
-      beta[l] = soft_thresh(sum(W*X[,l]*(z - X[,-l] %*% beta_inner_old[-l])), 
+        beta[l] = soft_thresh(sum(W*X[,l]*(z - X[,-l] %*% beta_inner_old[-l])), 
                               nrow(X)*lambda*alpha)
       }
       beta = beta / (wx_norm + lambda*(1-alpha))
@@ -60,7 +60,7 @@ glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=10, tol=1e-08)
   list(beta=beta,iterations=j)
 }
 
-x = matrix(rnorm(100*20),100,20) * -2
+x = matrix(rnorm(100*20),100,20) * 100 
 #x <- scale(x)
 g2 = sample(0:1,100,replace=TRUE)
 
