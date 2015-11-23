@@ -51,7 +51,11 @@ glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=10, tol=1e-08)
     wx_norm = colSums(W*X^2)
     for (k in 1:maxit) {
       beta_inner_old = beta
-      beta = soft_thresh((wxtz - wxtx %*% beta) + beta, lambda*alpha)
+      for (l in 1:length(beta)) {
+        beta[l] = soft_thresh(sum(W[l] * X[,l] * (y - X[,-l] %*% beta[-l])), 
+                              lambda*alpha)
+      }
+#      beta = soft_thresh((wxtz - wxtx %*% beta) + beta, lambda*alpha)
       beta = beta / (wx_norm + lambda*(1-alpha))
       if(sqrt(as.double(crossprod(beta-beta_inner_old))) < tol) break
     }
@@ -63,7 +67,9 @@ glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=10, tol=1e-08)
 x = matrix(rnorm(100*20),100,20)
 x <- scale(x)
 g2 = sample(0:1,100,replace=TRUE)
-lambda = 0
+
+#lambda = 0
+lambda = 0.0285513653
 
 fg = glmnet(x, g2, family="gaussian", lambda=lambda, standardize=FALSE, intercept=FALSE)
 fit = glmnet_ref(x, g2, family=gaussian, lambda=lambda, alpha=1, tol=0)
@@ -72,12 +78,12 @@ max(abs(fg$beta - fit$beta))
 cbind(fg$beta, fit$beta)
 
 
-
 fg = glmnet(x, g2, family="binomial", lambda=lambda, standardize=FALSE, intercept=FALSE)
 fit = glmnet_ref(x, g2, family=binomial, lambda=lambda, alpha=1, tol=0)
 
 max(abs(fg$beta - fit$beta))
 cbind(fg$beta, fit$beta)
+stop("here")
 
 fit$beta
 fit$iterations

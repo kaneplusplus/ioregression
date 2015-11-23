@@ -6,8 +6,13 @@ Date: 2015-05-26
 Author: Taylor Arnold, Michael J. Kane, Simon Urbanek
 Maintainer: Michael J. Kane <kaneplusplus@gmail.com>
 Description: Implements out-of-core regression
-  routines (OLS, GLM, LARS, Ridge) and can be used with any input
-  implemented as an R connection.
-Depends: iotools, lars, Matrix
-Suggests: testthat
+    routines (OLS, GLM, LARS, Ridge) and can be used with any input
+    implemented as an R connection.
+Depends:
+    iotools,
+    lars,
+    Matrix
+Suggests:
+    testthat
 License: GPL-2
+RoxygenNote: 5.0.0
