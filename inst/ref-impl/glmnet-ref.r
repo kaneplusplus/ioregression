@@ -45,13 +45,12 @@ glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=10, tol=1e-08)
     gprime = family()$mu.eta(eta)
     z      = eta + (y - g) / gprime
     W      = as.vector(gprime^2 / family()$variance(g))
-    W      = W / sum(W)
     wx_norm = colSums(W*X^2)
     for (k in 1:maxit) {
       beta_inner_old = beta
       for (l in 1:length(beta)) {
-      beta[l] = soft_thresh(sum(W * X[,l] * (z - X[,-l] %*% beta_inner_old[-l])), 
-                              lambda*alpha)
+      beta[l] = soft_thresh(sum(W*X[,l]*(z - X[,-l] %*% beta_inner_old[-l])), 
+                              nrow(X)*lambda*alpha)
       }
       beta = beta / (wx_norm + lambda*(1-alpha))
       if(sqrt(as.double(crossprod(beta-beta_inner_old))) < tol) break
