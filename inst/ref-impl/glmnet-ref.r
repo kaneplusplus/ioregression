@@ -17,7 +17,7 @@ lmnet_ref = function(X, y, lambda, alpha, maxit=10000, tol=1e-7) {
   xtx = crossprod(X)
   for(j in 1:maxit) {
     beta_old = beta
-    beta = soft_thresh((xty - xtx %*% beta)/nrow(X) + beta, lambda*alpha) 
+    beta = soft_thresh((xty - xtx %*% beta)/nrow(X) + beta, lambda*alpha)
     beta = beta / (1 + lambda*(1-alpha))
     if(sqrt(crossprod(beta-beta_old)) < tol) break
   }
@@ -26,11 +26,12 @@ lmnet_ref = function(X, y, lambda, alpha, maxit=10000, tol=1e-7) {
 
 x=matrix(rnorm(100*20),100,20)
 y=rnorm(100)
-fit=glmnet(x,y, lambda=lambda)
+fit=glmnet(x,y, lambda=0.0454336178, standardize=FALSE, intercept=FALSE)
 
 fit_ref = lmnet_ref(x, y, lambda=0.0454336178, alpha=1)
 crossprod(fit_ref$beta, fit$beta)
 
+max(abs(fit_ref$beta - fit$beta))
 
 glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=10, tol=1e-08)
 {
@@ -44,12 +45,13 @@ glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=10, tol=1e-08)
     gprime = family()$mu.eta(eta)
     z      = eta + (y - g) / gprime
     W      = as.vector(gprime^2 / family()$variance(g))
+    W      = W / sum(W)
     wxtz = crossprod(W*X, z)
     wxtx = crossprod(W*X, X)
     wx_norm = colSums(W*X^2)
     for (k in 1:maxit) {
       beta_inner_old = beta
-      beta = soft_thresh((wxtz - wxtx %*% beta)/nrow(X) + beta, lambda*alpha)
+      beta = soft_thresh((wxtz - wxtx %*% beta) + beta, lambda*alpha)
       beta = beta / (wx_norm + lambda*(1-alpha))
       if(sqrt(as.double(crossprod(beta-beta_inner_old))) < tol) break
     }
@@ -59,16 +61,29 @@ glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=10, tol=1e-08)
 }
 
 x = matrix(rnorm(100*20),100,20)
+x <- scale(x)
 g2 = sample(0:1,100,replace=TRUE)
-lambda = 0.0489798934 
+lambda = 0
 
-fg = glmnet(x,g2,family="binomial", lambda=lambda)
+fg = glmnet(x, g2, family="gaussian", lambda=lambda, standardize=FALSE, intercept=FALSE)
+fit = glmnet_ref(x, g2, family=gaussian, lambda=lambda, alpha=1, tol=0)
 
-fit = glmnet_ref(x, g2, lambda=lambda, alpha=1)
+max(abs(fg$beta - fit$beta))
+cbind(fg$beta, fit$beta)
+
+
+
+fg = glmnet(x, g2, family="binomial", lambda=lambda, standardize=FALSE, intercept=FALSE)
+fit = glmnet_ref(x, g2, family=binomial, lambda=lambda, alpha=1, tol=0)
+
+max(abs(fg$beta - fit$beta))
+cbind(fg$beta, fit$beta)
+
 fit$beta
 fit$iterations
 crossprod(fit$beta, fg$beta)
 
+max(abs(fg$beta - fit$beta))
 
 
 
