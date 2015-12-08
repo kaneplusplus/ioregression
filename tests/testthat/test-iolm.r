@@ -1,14 +1,17 @@
 library(testthat)
+library(adf)
 library(ioregression)
 
 # Download the data to a temp directory.
 bz_file_name = file.path(temp_dir <- tempdir(), "1987.csv.bz2")
-if (!file.exists(bz_file_name))
-  download.file("http://stat-computing.org/dataexpo/2009/1987.csv.bz2", bz_file_name)
+if (!file.exists(bz_file_name)) {
+  download.file("http://stat-computing.org/dataexpo/2009/1987.csv.bz2", 
+                bz_file_name)
+}
 
 # Create an abstract data frame and a real data frame:
-data = adf(bz_file_name, sep=",", header=TRUE, conMethod="bzfile")
-data = allFactorLevels(data)
+df = adf(bz_file_name, conMethod="bzfile", header=TRUE, sep=",")
+df = allFactorLevels(data)
 df = read.table(bzfile(bz_file_name), header=TRUE, sep=",")
 
 # Run a basic linear regression and check the terms

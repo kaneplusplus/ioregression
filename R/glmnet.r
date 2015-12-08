@@ -28,9 +28,6 @@
 #' mean zero and standard deviation one?
 #' @param tol numeric tolerance.
 #' @param max_it the maximum number of iterations per regression.
-#' @param filter should filtering rules be used to remove variables that will
-#' not be needed in the regression? Default is strong corresponding to
-#' http://www-stat.stanford.edu/~tibs/ftp/strong.pdf.
 #' @param lambda_epsilon this value is multiplied by the max lambda in the
 #' data to determine the minimum lambda when the regularization path is
 #' determined from the data. This is ignored when lambda is specified.
@@ -39,11 +36,11 @@
 #' @param parallel    integer. the number of parallel processes to use in the
 #'                     calculation (*nix only).
 #' @export
-iolmnet = function(formula, family, data, subset=NULL, weights=NULL, 
+glmnet = function(formula, family, data, subset=NULL, weights=NULL, 
                    na.action=NULL, offset=NULL, alpha=1, lambda=NULL, 
                    contrasts=NULL, standardize=FALSE, tol=1e-7,
-                   max_it = 1e+05, filter=c("strong", "safe", "none"),
-                   lambda_epsilon=0.0001, nlambdas=100,parallel=1L) {
+                   max_it=1e+05, lambda_epsilon=0.0001, nlambdas=100,
+                   parallel=1L) {
 
   # Under-development related messages.
   if (!missing(weights)) stop("Weights are not yet supported.")

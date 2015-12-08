@@ -83,22 +83,24 @@ g2 = sample(0:1,100,replace=TRUE)
 #lambda = 0
 lambda = 0.0454336178
 
-fg = glmnet(x, g2, family="gaussian", lambda=lambda, standardize=FALSE, intercept=FALSE)
+fg = glmnet(x, g2, family="gaussian", lambda=lambda, standardize=FALSE, 
+            intercept=FALSE)
 fit = glmnet_ref(x, g2, family=gaussian, lambda=lambda, alpha=1, tol=0)
 
 max(abs(fg$beta - fit$beta))
 print("GLMNET GAUSSIAN")
 print(cbind(fg$beta, fit$beta))
 
-fg = glmnet(x, g2, family="binomial", lambda=lambda, standardize=FALSE, intercept=FALSE)
+fg = glmnet(x, g2, family="binomial", lambda=lambda, standardize=FALSE, 
+            intercept=FALSE)
 fit = glmnet_ref(x, g2, family=binomial, lambda=lambda, alpha=1, tol=0)
 
 print(max(abs(fg$beta - fit$beta)))
 print("GLMNET BINOMIAL")
 print(cbind(fg$beta, fit$beta))
 
-fit$beta
-fit$iterations
+#fit$beta
+#fit$iterations
 crossprod(fit$beta, fg$beta)
 
 max(abs(fg$beta - fit$beta))
