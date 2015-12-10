@@ -13,7 +13,7 @@ soft_thresh = function(x, g) {
 
 # Get xty, xtx_all, num_rows, and all_var_names from an adf.
 net_matrices = function(data, formula, standardize, subset, weights, na.action,
-                        offset, contrasts, parallel) {
+                        offset, contrasts) {
   # Here's where we get the initial xtx, xty and number of rows. Note that
   # if we standardize that we need an extra pass through the data; one
   # to get the mans, one to get the standardized inner-products. If you try
@@ -52,8 +52,7 @@ net_matrices = function(data, formula, standardize, subset, weights, na.action,
                     warn_intercept=attributes(d$mt)$intercept))
 
       },formula=formula,subset=subset,weights=weights,
-        na.action=na.action, offset=offset, contrasts=contrasts,
-        parallel=parallel)
+        na.action=na.action, offset=offset, contrasts=contrasts)
     stand_info = stand_info[!sapply(stand_info, is.null)]
     if (length(stand_info) == 0L) stop("No valid data.")
     num_rows = Reduce(`+`, Map(function(x) x$num_rows, stand_info))    

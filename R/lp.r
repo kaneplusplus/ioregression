@@ -38,7 +38,7 @@ iolp = function(formula, data, p=1.5, weights=NULL, subset=NULL,
   call <- match.call()
 
   if (p > 2 || p < 1) stop("Invalid input to p; must have 1 <= p <= 2.")
-  if (!inherits(data, "adf")) data = as.adf(data)
+  if (!inherits(data, "adf")) data = adf(data)
 
   if (is.null(beta_init)) {
     lm.out = iolm(formula, data, subset=subset, weights=weights,

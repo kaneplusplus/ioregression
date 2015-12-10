@@ -27,8 +27,6 @@
 #' @param trace       logical indicating if output should be produced for each
 #'                     iteration.
 #' @param tol         numeric tolerance. Set to -1 to ignore.
-#' @param parallel    integer. the number of parallel processes to use in the
-#'                     calculation (*nix only).
 #' @details
 #' The parameter \code{a} controls the tradeoff between efficency
 #' and robustness. The default value of 4.685 yields an efficency of 95%
@@ -40,10 +38,10 @@
 iorlm = function(formula, data, weights=NULL, subset=NULL,
                 na.action=NULL, offset=NULL, contrasts=NULL,
                 beta_init=NULL, s_init=NULL, a=4.685, maxit = 20,
-                acc = 1e-4, trace=FALSE, tol=-1, parallel=1L) {
+                acc = 1e-4, trace=FALSE, tol=-1) {
   call <- match.call()
 
-  if (!inherits(data, "adf")) data = as.adf(data)
+  if (!inherits(data, "adf")) data = adf(data)
 
   if (!is.null(weights) && !is.character(weights <- weights[[1]]))
     stop("weights must be a length one character vector")
@@ -67,7 +65,7 @@ iorlm = function(formula, data, weights=NULL, subset=NULL,
     cvs = adf.apply(x=data, type="sparse.model",
                     FUN=rlm_kernel ,passedVars=pvar, formula=formula,
                     subset=subset,weights=weights, na.action=na.action,
-                    offset=offset, contrasts=contrasts, parallel=parallel)
+                    offset=offset, contrasts=contrasts)
     cvs = cvs[!sapply(cvs,is.null)]
 
     XTWX = Reduce(`+`, Map(function(x) x$XTWX, cvs))

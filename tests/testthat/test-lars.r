@@ -1,5 +1,6 @@
 library(testthat)
 library(ioregression)
+library(adf)
 
 library(MASS)
 
@@ -11,7 +12,7 @@ if (!file.exists(bz_file_name))
 # Create an abstract data frame and a real data frame:
 data = adf(bz_file_name, sep=",", header=TRUE, conMethod="bzfile")
 data = allFactorLevels(data)
-df = read.table(bzfile(bz_file_name), header=TRUE, sep=",")
+if (!exists(df)) df = read.table(bzfile(bz_file_name), header=TRUE, sep=",")
 
 # Create an iofit and a local model matrix:
 obj = iolm(DepDelay ~ Distance + Month + ArrTime - 1, data=data)

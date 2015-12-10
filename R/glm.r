@@ -28,13 +28,11 @@
 #' @param tol         numeric tolerance when calling solve. 
 #' @param stat_tol    statistical tolerance for the slope coefficients. If NA
 #' then only the numerical tolerance is used.
-#' @param parallel    integer. the number of parallel processes to use in the
-#'                     calculation (*nix only).
 #' @export
 ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
                 na.action=NULL, start = NULL, etastart, mustart, offset=NULL,
                 control=list(), contrasts=NULL, trace=FALSE,
-                tol=2*.Machine$double.eps, stat_tol=NULL, parallel=1L) {
+                tol=2*.Machine$double.eps, stat_tol=NULL) {
   call <- match.call()
   control <- do.call("glm.control", control)
   if (is.character(family))
@@ -46,7 +44,7 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
       stop("'family' not recognized")
   }
 
-  if (!inherits(data, "adf")) data = as.adf(data)
+  if (!inherits(data, "adf")) data = adf(data)
 
   if (!is.null(weights) && !is.character(weights <- weights[[1]]))
     stop("weights must be a length one character vector")
@@ -61,11 +59,10 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
   for (i in 1:control$maxit) {
     pvar = list(beta=beta, cw=cumulative_weight, family=family,
                 deviance=deviance, wtdmu=wtdmu)
-    cvs = adf.apply(x=data, type="model", FUN=glm_kernel,
-                    passedVars=pvar, formula=formula, subset=subset,
+    cvs = adf.apply(x=data, type="sparse.model", FUN=glm_kernel,
+                    args=pvar, formula=formula, subset=subset,
                     weights=weights, na.action=na.action,
-                    offset=offset, contrasts=contrasts,
-                    parallel=parallel)
+                    offset=offset, contrasts=contrasts)
     cvs = cvs[!sapply(cvs,is.null)]
 
     XTWX = Reduce(`+`, Map(function(x) x$XTWX, cvs))

@@ -15,14 +15,12 @@
 #' @param contrasts contrasts to use with the regression. See the \code{contrasts.arg}
 #'                  of \code{model.matrix.default}
 #' @param tol       numeric tolerance. Set to -1 to ignore.
-#' @param parallel    integer. the number of parallel processes to use in the
-#'                     calculation (*nix only).
+#' @importFrom adf adf.apply allFactorLevels 
 #' @export
 iolm = function(formula, data, subset=NULL, weights=NULL,
-                na.action=NULL, offset=NULL, contrasts=NULL, tol=-1,
-                parallel=1L) {
+                na.action=NULL, offset=NULL, contrasts=NULL, tol=-1) {
   call = match.call()
-  if (!inherits(data, "adf")) data = as.adf(data)
+#  if (!inherits(data, "adf")) data = as.adf(data)
 
   if (!is.null(weights) && !is.character(weights <- weights[[1]]))
     stop("weights must be a length one character vector")
@@ -78,8 +76,7 @@ iolm = function(formula, data, subset=NULL, weights=NULL,
                         mt=d$mt))
 
           },formula=formula,subset=subset,weights=weights,
-            na.action=na.action, offset=offset, contrasts=contrasts,
-            parallel=parallel)
+            na.action=na.action, offset=offset, contrasts=contrasts)
 
   cvs = cvs[!sapply(cvs,is.null)]
   if (length(cvs) == 0L) stop("No valid data.")

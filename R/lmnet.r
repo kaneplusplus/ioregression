@@ -32,19 +32,17 @@
 #' determined from the data. This is ignored when lambda is specified.
 #' @param nlambdas the number of lambdas to be generated in the regularization
 #' path. This is ignored when lambda is specified.
-#' @param parallel integer. the number of parallel processes to use in the
-#' calculation (*nix only).
 #' @export
 iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
                    offset=NULL, alpha=1, lambda=NULL, contrasts=NULL,
                    standardize=FALSE, tol=1e-7, max_it = 1e+05, 
-                   lambda_epsilon=0.0001, nlambdas=100,parallel=1L) {
+                   lambda_epsilon=0.0001, nlambdas=100) {
 
   # Under-development related messages.
   if (!missing(weights)) stop("Weights are not yet supported.")
 
   call = match.call()
-  if (!inherits(data, "adf")) data = as.adf(data)
+  if (!inherits(data, "adf")) data = adf(data)
 
   if (!is.null(weights) && !is.character(weights <- weights[[1]]))
     stop("weights must be a length one character vector")
@@ -54,7 +52,7 @@ iolmnet = function(formula, data, subset=NULL, weights=NULL, na.action=NULL,
     stop("offset must be a length one character vector")
 
   nm = net_matrices(data, formula, standardize, subset, weights, na.action,
-                    offset, contrasts, parallel)
+                    offset, contrasts)
   # net_matrices returns xty, xtx, num_rows, and all_var_names. 
 
   data_lambdas = abs(nm$xty) / nm$num_rows / alpha
