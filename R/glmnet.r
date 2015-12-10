@@ -43,7 +43,7 @@ glmnet = function(formula, family, data, subset=NULL, weights=NULL,
   if (!missing(weights)) stop("Weights are not yet supported.")
 
   call = match.call()
-  if (!inherits(data, "adf")) data = adf(data)
+#  if (!inherits(data, "adf")) data = adf(data)
 
   if (!is.null(weights) && !is.character(weights <- weights[[1]]))
     stop("weights must be a length one character vector")

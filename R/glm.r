@@ -28,6 +28,7 @@
 #' @param tol         numeric tolerance when calling solve. 
 #' @param stat_tol    statistical tolerance for the slope coefficients. If NA
 #' then only the numerical tolerance is used.
+#' @importFrom adf adf.apply
 #' @export
 ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
                 na.action=NULL, start = NULL, etastart, mustart, offset=NULL,
@@ -44,7 +45,7 @@ ioglm = function(formula, family = gaussian, data, weights=NULL, subset=NULL,
       stop("'family' not recognized")
   }
 
-  if (!inherits(data, "adf")) data = adf(data)
+#  if (!inherits(data, "adf")) data = adf(data)
 
   if (!is.null(weights) && !is.character(weights <- weights[[1]]))
     stop("weights must be a length one character vector")

@@ -41,7 +41,7 @@ iorlm = function(formula, data, weights=NULL, subset=NULL,
                 acc = 1e-4, trace=FALSE, tol=-1) {
   call <- match.call()
 
-  if (!inherits(data, "adf")) data = adf(data)
+#  if (!inherits(data, "adf")) data = adf(data)
 
   if (!is.null(weights) && !is.character(weights <- weights[[1]]))
     stop("weights must be a length one character vector")

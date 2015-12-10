@@ -9,7 +9,7 @@ Description: Implements out-of-core regression
     routines (OLS, GLM, LARS, Ridge) and can be used with any input
     implemented as an R connection.
 Depends:
-    iotools,
+    adf,
     lars,
     Matrix
 Suggests:
