@@ -16,8 +16,12 @@
 #' regression.
 #' @param na.action a function which indicates what should happen when the data
 #' contain 'NA's. See lm.fit for more details.
+#' @param start starting values for the parameters in the linear predictor.
+#' @param etastart starting values for the linear predictor.
+#' @param mustart starting values for the vector of means.
 #' @param offset a optional character string, which will be evaluated in the
 #' frame of the data, giving the offsets for the regression
+#' @param control a list of parameters for controlling the fitting process.
 #' @param alpha the elasticnet mixing parameter 0 <= alpha <= 1.
 #' @param lambda a user supplied value (or sequence of values) for the penalty
 #' parameter. If not specified then a regularization path is created based
@@ -35,20 +39,13 @@
 #' path. This is ignored when lambda is specified.
 #' @export
 glmnet = function(formula, family, data, subset=NULL, weights=NULL, 
-                   na.action=NULL, offset=NULL, alpha=1, lambda=NULL, 
-                   contrasts=NULL, standardize=FALSE, tol=1e-7,
+                   na.action=NULL, start=NULL, etastart, mustart,
+                   offset=NULL, control=list(), alpha=1, 
+                   lambda=NULL, contrasts=NULL, standardize=FALSE, tol=1e-7,
                    max_it=1e+05, lambda_epsilon=0.0001, nlambdas=100) {
-
-  # Under-development related messages.
-  if (!missing(weights)) stop("Weights are not yet supported.")
-
-  call = match.call()
-#  if (!inherits(data, "adf")) data = adf(data)
-
-  if (!is.null(weights) && !is.character(weights <- weights[[1]]))
-    stop("weights must be a length one character vector")
-  if (!is.null(subset) && !is.character(subset <- subset[[1]]))
-    stop("subset must be a length one character vector")
-  if (!is.null(offset) && !is.character(offset <- offset[[1]]))
-    stop("offset must be a length one character vector")
+  ret = ioirls(formula, family, data, weights, subset, na.action, start,
+               etastart, mustart, offset, control, contrasts, trace,
+               tol, glment_coordinate_descent_gen(lamda, alpha))
+  class(ret) = c("ioglmnet")
+  ret
 }

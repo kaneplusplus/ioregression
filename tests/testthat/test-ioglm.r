@@ -13,7 +13,7 @@ if (!file.exists(bz_file_name))
 # Create an abstract data frame and a real data frame:
 data = adf(bz_file_name, sep=",", header=TRUE, conMethod="bzfile")
 data = allFactorLevels(data)
-if (!exists("df")) df = read.table(bzfile(bz_file_name), header=TRUE, sep=",")
+df = read.table(bzfile(bz_file_name), header=TRUE, sep=",")
 
 # Run a basic glm model and check the terms
 iofit = ioglm((DepDelay > 15) ~ Distance + UniqueCarrier, data=data,
