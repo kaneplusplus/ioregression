@@ -90,7 +90,8 @@ glm_kernel = function(d, passedVars=NULL) {
   list(XTWX=Matrix::crossprod(d$x, W * d$x), XTWz=Matrix::crossprod(d$x, W*z),
        deviance=deviance, null_dev=null_dev, cumulative_weight=sum(d$w), 
        nobs=nobs, aic=aic, RSS=RSS, contrasts=attr(d$x, "contrasts"),
-       wy=Matrix::crossprod(sqrt(weights), d$y))
+       wy=Matrix::crossprod(sqrt(weights), d$y), 
+       wx_norm=Matrix::colSums(W*d$x^2))
 }
 
 #' Print ioglm object

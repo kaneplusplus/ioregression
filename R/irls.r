@@ -31,7 +31,7 @@ ioirls = function(formula, family, data, weights, subset,
                     weights=weights, na.action=na.action,
                     offset=offset, contrasts=contrasts)
     cvs = cvs[!sapply(cvs, is.null)]
-
+    num_rows = Reduce(`+`, Map(function(x) x$num_rows, cvs))
     XTWX = Reduce(`+`, Map(function(x) x$XTWX, cvs))
     XTWz = Reduce(`+`, Map(function(x) x$XTWz, cvs))
     deviance = Reduce(`+`, Map(function(x) x$deviance, cvs))
@@ -42,6 +42,7 @@ ioirls = function(formula, family, data, weights, subset,
       family$linkinv(0)
     }
     contrasts = cvs[[1]]$contrasts
+    wx_norm = Reduce(`+`, Map(function(x) x$wx_norm, cvs))
     # TODO: Add checking for singularities here.
     beta = do.call("beta_update_fun")
     if (!is.null(beta_old))
@@ -156,7 +157,7 @@ glm_kernel = function(d, passedVars=NULL) {
   list(XTWX=Matrix::crossprod(d$x, W * d$x), XTWz=Matrix::crossprod(d$x, W*z),
        deviance=deviance, null_dev=null_dev, cumulative_weight=sum(d$w), 
        nobs=nobs, aic=aic, RSS=RSS, contrasts=attr(d$x, "contrasts"),
-       wy=Matrix::crossprod(sqrt(weights), d$y))
+       wy=Matrix::crossprod(sqrt(weights), d$y), num_row=nrow(d$x))
 }
 
 #' Print ioglm object

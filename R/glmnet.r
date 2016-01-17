@@ -49,3 +49,87 @@ glmnet = function(formula, family, data, subset=NULL, weights=NULL,
   class(ret) = c("ioglmnet")
   ret
 }
+
+partial_beta_kernel = function() {
+  if (nrow(d$x) == 0L) return(NULL)
+  if (!is.null(d$w)) {
+    if (any(d$w == 0)) {
+      ok = d$w != 0
+      d$w = d$w[ok]
+      d$x = d$x[ok,,drop = FALSE]
+      d$y = d$y[ok]
+      if (!is.null(d$offset)) d$offset = d$offset[ok]
+    }
+  } 
+  offset <- if (!is.null(d$offset)) d$offset else offset = rep.int(0,nobs)
+  weights <- if (!is.null(d$w)) d$w else rep(1, nobs)
+  family = passedVars$family
+
+  eta = as.numeric(d$x %*% passedVars$beta)
+  g = family$linkinv(eta <- eta + offset)
+  gprime = family$mu.eta(eta)
+  residuals = (d$y-g)/gprime
+  z = eta - offset + residuals
+  W = as.vector(weights * gprime^2 / family$variance(g))
+  beta_new = rep(NA, length(beta))
+  for (l in 1:length(beta_new)) {
+    beta_new[l] = W * d$x[,l] * (z - d$x[,-l] %*% beta)
+  }
+  list(partial_beta=beta_new)
+}
+
+quad_loss_kernel = function() {
+  if (nrow(d$x) == 0L) return(NULL)
+  if (!is.null(d$w)) {
+    if (any(d$w == 0)) {
+      ok = d$w != 0
+      d$w = d$w[ok]
+      d$x = d$x[ok,,drop = FALSE]
+      d$y = d$y[ok]
+      if (!is.null(d$offset)) d$offset = d$offset[ok]
+    }
+  } 
+  offset <- if (!is.null(d$offset)) d$offset else offset = rep.int(0,nobs)
+  weights <- if (!is.null(d$w)) d$w else rep(1, nobs)
+  family = passedVars$family
+
+  eta = as.numeric(d$x %*% passedVars$beta)
+  g = family$linkinv(eta <- eta + offset)
+  gprime = family$mu.eta(eta)
+  residuals = (d$y-g)/gprime
+  z = eta - offset + residuals
+  W = as.vector(weights * gprime^2 / family$variance(g))
+  list(partial_quad_loss = W * (z - d$x %*% beta)^2)
+}
+
+glmnet_coordinate_descent_gen(lambda, alpha) {
+  function() {
+    quad_loss_new = Inf
+    for (i =1:control$maxit) {
+      pvar = list(beta=beta, family=family)
+      cvs = adf.apply(x=data, type="sparse.model", FUN=partial_beta_kernel,
+                      args=pvar, formula=formula, subset=subset, 
+                      weights=weights, na.action=na.action, offset=offset,
+                      contrasts=contrasts)
+      beta_new = Reduce(`+`, Map(function(x) x$partial_beta, cvs))        
+      beta_new = soft_thresh(beta_new, cumulative_weight*lambda*alpha)
+      beta_new = beta_new / (wx_norm + lambda *(1-alpha))
+
+      pvar$beta = beta_new
+      partial_quad_loss = adf.apply(x=data, type="sparse.model", 
+                                    FUN=partial_beta_kernel,
+                                    args=pvar, formula=formula, subset=subset,
+                                    weights=weights, na.action=na.action, 
+                                    offset=offset, contrasts=contrasts)
+      quad_loss_new = Reduce(`+`, Map(function(x) x$partial_quad_loss, cvs))
+      quad_loss_new = -1/2/nrow(X) * quad_loss_new +
+        lambda * (1-alpha) * sum(beta_new^2)/2 + alpha * sum(beta_new)
+      if (quad_loss > quad_loss_old) {
+        beta = beta_new
+        quad_loss = quad_loss_new
+      }
+      else break
+    }
+    beta
+  }
+}
