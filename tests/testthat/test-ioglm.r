@@ -6,9 +6,10 @@ TOL = 1e-4
 
 # Download the data to a temp directory.
 bz_file_name = file.path(temp_dir <- tempdir(), "1987.csv.bz2")
-if (!file.exists(bz_file_name))
+if (!file.exists(bz_file_name)) {
   download.file("http://stat-computing.org/dataexpo/2009/1987.csv.bz2",
                 bz_file_name)
+}
 
 # Create an abstract data frame and a real data frame:
 data = adf(bz_file_name, sep=",", header=TRUE, conMethod="bzfile")

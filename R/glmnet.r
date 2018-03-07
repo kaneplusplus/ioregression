@@ -45,7 +45,7 @@ glmnet = function(formula, family, data, subset=NULL, weights=NULL,
                    max_it=1e+05, lambda_epsilon=0.0001, nlambdas=100) {
   ret = ioirls(formula, family, data, weights, subset, na.action, start,
                etastart, mustart, offset, control, contrasts, trace,
-               tol, glment_coordinate_descent_gen(lamda, alpha))
+               tol, glmnet_coordinate_descent_gen(lamda, alpha))
   class(ret) = c("ioglmnet")
   ret
 }
@@ -102,10 +102,10 @@ quad_loss_kernel = function() {
   list(partial_quad_loss = W * (z - d$x %*% beta)^2)
 }
 
-glmnet_coordinate_descent_gen(lambda, alpha) {
+glmnet_coordinate_descent_gen <- function(lambda, alpha) {
   function() {
     quad_loss_new = Inf
-    for (i =1:control$maxit) {
+    for (i in seq_len(control$maxit)) {
       pvar = list(beta=beta, family=family)
       cvs = adf.apply(x=data, type="sparse.model", FUN=partial_beta_kernel,
                       args=pvar, formula=formula, subset=subset, 

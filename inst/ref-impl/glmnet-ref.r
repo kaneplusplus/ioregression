@@ -65,7 +65,7 @@ glmnet_ref = function(X, y, lambda, alpha, family=binomial, maxit=10, tol=1e-08)
       beta = beta / (wx_norm + lambda*(1-alpha))
       quad_loss = -1/2/nrow(X) * sum(W*(z - X %*% beta)^2) + 
         lambda * (1-alpha) * sum(beta^2)/2 + alpha * sum(beta)
-      if (quad_loss > quad_loss_old) quad_loss_old = quad_loss
+      if (quad_loss < quad_loss_old) quad_loss_old = quad_loss
       else {
         beta = beta_inner_old
         break

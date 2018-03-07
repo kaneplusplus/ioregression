@@ -1,7 +1,7 @@
 
 ioirls = function(formula, family, data, weights, subset,
                 na.action, start, etastart, mustart, offset,
-                control, contrasts, trace, tol, beta_update_fun) {
+                control, contrasts, trace, tol, beta_update_expr) {
   call <- match.call()
   control <- do.call("glm.control", control)
   if (is.character(family))
@@ -44,7 +44,8 @@ ioirls = function(formula, family, data, weights, subset,
     contrasts = cvs[[1]]$contrasts
     wx_norm = Reduce(`+`, Map(function(x) x$wx_norm, cvs))
     # TODO: Add checking for singularities here.
-    beta = do.call("beta_update_fun")
+    #beta = do.call("beta_update_fun")
+    beta <- eval(beta_update_expr)
     if (!is.null(beta_old))
       err = as.vector(Matrix::crossprod(beta-beta_old))
     else

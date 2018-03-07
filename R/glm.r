@@ -1,31 +1,31 @@
 #' Perform a generalized linear regression
 #'
-#' @importFrom       Matrix solve crossprod
-#' @param formula     the formula for the regression
-#' @param family      a description of the error distribution and link function to
-#'                     be used in the model. This can be a character string naming a
-#'                     family function, a family function or the result of a call to
-#'                     a family function.
-#' @param data        an abstract data frame, or something which can be
-#'                     coerced to one.
-#' @param weights     a optional character string, which will be evaluated in the
-#'                     frame of the data, giving the sample weights for the regression
-#' @param subset      an options character string, which will be evaluated in the
-#'                     frame of the data, to indicate which rows to include
-#'                     in the analysis
-#' @param na.action   a function which indicates what should happen when the data
-#'                     contain 'NA's. See lm.fit for more details.
-#' @param start       starting values for the parameters in the linear predictor.
-#' @param etastart    starting values for the linear predictor.
-#' @param mustart     starting values for the vector of means.
-#' @param offset      a optional character string, which will be evaluated in the
-#'                     frame of the data, giving the offsets for the regression
-#' @param control     a list of parameters for controlling the fitting process.
-#' @param contrasts   contrasts to use with the regression. See the \code{contrasts.arg}
-#'                     of \code{model.matrix.default}
-#' @param trace       logical indicating if output should be produced for each
-#'                     iteration.
-#' @param tol         numeric tolerance when calling solve. 
+#' @importFrom Matrix solve crossprod
+#' @param formula the formula for the regression
+#' @param family a description of the error distribution and link function to
+#' be used in the model. This can be a character string naming a
+#' family function, a family function or the result of a call to
+#' a family function.
+#' @param data an abstract data frame, or something which can be
+#' coerced to one.
+#' @param weights a optional character string, which will be evaluated in the
+#' frame of the data, giving the sample weights for the regression
+#' @param subset an options character string, which will be evaluated in the
+#' frame of the data, to indicate which rows to include
+#' in the analysis
+#' @param na.action a function which indicates what should happen when the data
+#' contain 'NA's. See lm.fit for more details.
+#' @param start starting values for the parameters in the linear predictor.
+#' @param etastart starting values for the linear predictor.
+#' @param mustart starting values for the vector of means.
+#' @param offset a optional character string, which will be evaluated in the
+#' frame of the data, giving the offsets for the regression
+#' @param control a list of parameters for controlling the fitting process.
+#' @param contrasts contrasts to use with the regression. 
+#' See the \code{contrasts.arg} of \code{model.matrix.default}
+#' @param trace logical indicating if output should be produced for each
+#' iteration.
+#' @param tol numeric tolerance when calling solve. 
 #' @importFrom adf adf.apply
 #' @export
 ioglm = function(formula, family=gaussian, data, weights=NULL, subset=NULL,
@@ -34,7 +34,7 @@ ioglm = function(formula, family=gaussian, data, weights=NULL, subset=NULL,
                 tol=2*.Machine$double.eps) {
   ret = ioirls(formula, family, data, weights, subset, na.action, start,
                etastart, mustart, offset, control, contrasts, trace,
-               tol, function() Matrix::solve(XTWX, XTWz, tol=tol))
+               tol, parse(text="Matrix::solve(XTWX, XTWz, tol=tol)"))
   class(ret) = c("ioglm", "iolm")
   ret
 }
