@@ -41,16 +41,7 @@ ioglm <- function(formula, family=gaussian, data, weights=NULL, subset=NULL,
 }
   
 glm_update_fun <- function(XTWX, XTWz, tol) {
-  ret <- try(Matrix::solve(XTWX, XTWz, tol)) 
-  if (inherits(ret, "try-error")) {
-    qrd <- qr(XTWX)
-    cat("\nYour design matrix is not full rank.\n", 
-        "Consider using only the following variables:\n",
-        paste0(rownames(XTWX)[qrd$pivot[seq_len(qrd$rank)]], 
-        collapse="\n"), "\n", sep="")
-    stop()
-  }
-  ret
+  Matrix::solve(XTWX, XTWz, tol)
 }
 
 glm_kernel <- function(d, passedVars=NULL) {
@@ -77,7 +68,6 @@ glm_kernel <- function(d, passedVars=NULL) {
   offset <- if (!is.null(d$offset)) d$offset else rep.int(0,nobs)
   weights <- if (!is.null(d$w)) d$w else rep(1, nobs)
   family <- passedVars$family
-
   if (is.null(passedVars$beta)) {
     # It's the first iteration.
     etastart <- start <- mustart <- NULL

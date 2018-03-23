@@ -46,7 +46,29 @@ ioirls = function(formula, family, data, weights, subset,
     }
     contrasts <- cvs[[1]]$contrasts
     wx_norm <- Reduce(`+`, Map(function(x) x$wx_norm, cvs))
-    # TODO: Add checking for singularities here.
+    qr_check <- qr(XTWX)
+    if (qr_check$rank < nrow(XTWX)) {
+      warning("Design matrix is reduced rank! Some regressors will be removed.")
+      rems <- qr_check$pivot[(qr_check$rank+1):nrow(XTWX)]
+      rem_names <- colnames(XTWX)[rems]
+      regressors <- attributes(terms(formula))$term.labels
+      keep <- vapply(regressors, 
+        function(x) length(grep(x, rem_names)) == 0, FALSE)
+
+      keep_names <- regressors[keep]
+      if (! ("(Intercept)" %in% colnames(XTWX))) {
+        keep_names <- c(keep_names, "-1")
+      } 
+
+      formula <- as.formula(paste0(as.character(formula)[2], " ~ ",
+        paste(keep_names, collapse=" + ")))
+      if (trace) {
+        cat("Reducing model because of singular design matrix.\n")
+      }
+      # Restart with the updated formula.
+      beta <- beta_old <- NULL
+      next
+    }
     beta <- beta_update_fun(XTWX, XTWz, tol)
     if (!is.null(beta_old)) {
       err <- as.vector(Matrix::crossprod(beta-beta_old))
@@ -64,7 +86,6 @@ ioirls = function(formula, family, data, weights, subset,
     }
     beta_old <- beta
   }
-
   # We only calculate these here, as we only care about the
   #  converging loop:
   aic <- Reduce(`+`, Map(function(x) x$aic, cvs))
