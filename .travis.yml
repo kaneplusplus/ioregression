@@ -7,7 +7,7 @@ r_binary_packages:
 
 r_github_packages:
   - s-u/iotools
-  - statsmaths/adf
+  - kaneplusplus/adf
   - jimhester/covr
 
 after_success:
