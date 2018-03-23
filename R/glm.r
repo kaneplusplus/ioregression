@@ -32,10 +32,24 @@ ioglm <- function(formula, family=gaussian, data, weights=NULL, subset=NULL,
                   na.action=NULL, start=NULL, etastart, mustart, offset=NULL,
                   control=list(), contrasts=NULL, trace=FALSE,
                   tol=2*.Machine$double.eps) {
+
   ret <- ioirls(formula, family, data, weights, subset, na.action, start,
                 etastart, mustart, offset, control, contrasts, trace,
-                tol, parse(text="Matrix::solve(XTWX, XTWz, tol=tol)"))
+                tol, glm_update_fun)
   class(ret) <- c("ioglm", "iolm")
+  ret
+}
+  
+glm_update_fun <- function(XTWX, XTWz, tol) {
+  ret <- try(Matrix::solve(XTWX, XTWz, tol)) 
+  if (inherits(ret, "try-error")) {
+    qrd <- qr(XTWX)
+    cat("\nYour design matrix is not full rank.\n", 
+        "Consider using only the following variables:\n",
+        paste0(rownames(XTWX)[qrd$pivot[seq_len(qrd$rank)]], 
+        collapse="\n"), "\n", sep="")
+    stop()
+  }
   ret
 }
 
@@ -88,7 +102,6 @@ glm_kernel <- function(d, passedVars=NULL) {
   if (!is.null(passedVars$deviance) && !is.null(passedVars$cw)) {
     aic <- family$aic(d$y, length(d$y), g, weights, deviance)
   }
-
   list(XTWX=Matrix::crossprod(d$x, W * d$x), XTWz=Matrix::crossprod(d$x, W*z),
        deviance=deviance, null_dev=null_dev, cumulative_weight=sum(d$w), 
        nobs=nobs, aic=aic, RSS=RSS, contrasts=attr(d$x, "contrasts"),
