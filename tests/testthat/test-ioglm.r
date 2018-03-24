@@ -29,6 +29,11 @@ expect_equal(summary(iofit)[c("sigma", "df", "r.squared", "adj.r.squared",
              summary(lmfit)[c("sigma", "df", "r.squared", "adj.r.squared",
                               "fstatistic")],tol=TOL)
 
+expect_equal(predict(iofit, df, type="link"), predict(lmfit, df, type="link"))
+expect_equal(predict(iofit, df, type="response"), 
+             predict(lmfit, df, type="response"))
+
+
 # Run a basic glm model with a poisson loss function and check the terms
 iofit <- ioglm((DepDelay > 15) ~ Distance + UniqueCarrier, data=data,
                family=poisson, trace=TRUE)
@@ -40,6 +45,10 @@ expect_equal(summary(iofit)[c("sigma", "df", "r.squared", "adj.r.squared",
                               "fstatistic")],
              summary(lmfit)[c("sigma", "df", "r.squared", "adj.r.squared",
                               "fstatistic")],tol=TOL)
+
+expect_equal(predict(iofit, df, type="link"), predict(lmfit, df, type="link"))
+expect_equal(predict(iofit, df, type="response"), 
+             predict(lmfit, df, type="response"))
 
 # Run a glm model without an intercept (a lot of the
 # metrics have special cases w/o an intercept) and check the terms
@@ -54,6 +63,11 @@ expect_equal(summary(iofit)[c("sigma", "df", "r.squared", "adj.r.squared",
              summary(lmfit)[c("sigma", "df", "r.squared", "adj.r.squared",
                               "fstatistic")], tol=TOL)
 
+expect_equal(predict(iofit, df, type="link"), predict(lmfit, df, type="link"))
+expect_equal(predict(iofit, df, type="response"), 
+             predict(lmfit, df, type="response"))
+
+
 # Run a glm model, only using observations where DepDelay > 0
 iofit <- ioglm((DepDelay > 15) ~ Distance + UniqueCarrier, data=data,
                family=binomial, subset="DepDelay > 0", trace=TRUE)
@@ -65,6 +79,11 @@ expect_equal(summary(iofit)[c("sigma", "df", "r.squared", "adj.r.squared",
                               "fstatistic")],
              summary(lmfit)[c("sigma", "df", "r.squared", "adj.r.squared",
                               "fstatistic")])
+
+expect_equal(predict(iofit, df, type="link"), predict(lmfit, df, type="link"))
+expect_equal(predict(iofit, df, type="response"), 
+             predict(lmfit, df, type="response"))
+
 
 # Run a glm model with a weight term (use Month since
 # it is non-negative and the best thing available).
@@ -79,6 +98,11 @@ expect_equal(summary(iofit)[c("sigma", "df", "r.squared", "adj.r.squared",
              summary(lmfit)[c("sigma", "df", "r.squared", "adj.r.squared",
                               "fstatistic")], tol=TOL)
 
+expect_equal(predict(iofit, df, type="link"), predict(lmfit, df, type="link"))
+expect_equal(predict(iofit, df, type="response"), 
+             predict(lmfit, df, type="response"))
+
+
 # Run a glm model with an offset. Use ArrDelay.
 iofit <- ioglm((DepDelay > 15) ~ Distance + UniqueCarrier, data=data,
                family=binomial, offset="ArrDelay", trace=TRUE)
@@ -90,3 +114,7 @@ expect_equal(summary(iofit)[c("sigma", "df", "r.squared", "adj.r.squared",
                               "fstatistic")],
              summary(lmfit)[c("sigma", "df", "r.squared", "adj.r.squared",
                               "fstatistic")], tol=TOL)
+expect_equal(predict(iofit, df, type="link"), predict(lmfit, df, type="link"))
+expect_equal(predict(iofit, df, type="response"), 
+             predict(lmfit, df, type="response"))
+

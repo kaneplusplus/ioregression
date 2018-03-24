@@ -1,3 +1,32 @@
+#' @importFrom Matrix sparse.model.matrix
+#' @export
+predict.ioglm <- function(object, newdata, 
+                          type=c("link", "response"),
+                          na.action = na.pass, ...) {
+  current_na_action <- options()$na.action
+  options(na.action=na.action)
+  if (inherits(newdata, "data.frame")) {
+    new_data_mm <- model.matrix(object$formula, newdata, 
+                                contrasts=object$contrasts,
+                                na.action=na.action)
+    if (type[1] == "link") {
+      ret <- na.action((new_data_mm %*% object$coefficients)[,1])
+    } else if (type[1] == "response") {
+      ret <- na.action(
+        object$family$linkinv( (new_data_mm %*% object$coefficients)[,1] ))
+    } else {
+      options(na.action=current_na_action)
+      stop(paste0('Unknown type "', type, '".'))
+    }
+  } else {
+    options(na.action=current_na_action)
+    stop(paste0("Don't know how to predict when new data is of class",
+                class(newdata), "."))
+  }
+  options(na.action=current_na_action)
+  ret
+}
+
 #' Perform a generalized linear regression
 #'
 #' @importFrom Matrix solve crossprod
