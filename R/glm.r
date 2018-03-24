@@ -114,7 +114,11 @@ glm_kernel <- function(d, passedVars=NULL) {
   aic <- NULL
   null_dev <- NULL
   if (!is.null(passedVars$cw) && !is.null(passedVars$wtdmu)) {
-    null_dev <- sum(family$dev.resids(d$y, passedVars$wtdmu, weights))
+    wtdmu <- passedVars$wtdmu
+    if (length(wtdmu) == 1 && length(d$y != 1)) {
+      wtdmu <- rep(wtdmu, length(d$y))
+    }
+    null_dev <- sum(family$dev.resids(d$y, wtdmu, weights))
   }
   RSS <- sum(W*residuals^2)
   deviance <- sum(family$dev.resids(d$y, g, weights))
