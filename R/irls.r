@@ -75,7 +75,7 @@ ioirls = function(formula, family, data, weights, subset,
     } else {
       err <- control$epsilon * 2
     }
-    p_val <- Inf
+    p_val <- NaN
     if ( (!is.null(beta_old) && (err < control$epsilon)) ) {
       converged <- TRUE
       break
